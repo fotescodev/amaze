@@ -40,7 +40,7 @@ export function getAudioContext(): AudioContext {
 
 /**
  * Play a single chord (one syllable).
- * Returns the end time of the chord for scheduling the next one.
+ * Returns the end time and all created oscillators for cancel tracking.
  */
 function scheduleChord(
   ctx: AudioContext,
@@ -48,9 +48,10 @@ function scheduleChord(
   tones: number[],
   startTime: number,
   octaveShift: boolean = false
-): number {
+): { endTime: number; oscillators: OscillatorNode[] } {
   const count = tones.length;
   const perOscGain = MASTER_GAIN / Math.sqrt(count); // normalize loudness
+  const oscillators: OscillatorNode[] = [];
 
   for (const baseHz of tones) {
     const hz = octaveShift ? baseHz * 2 : baseHz;
@@ -85,33 +86,52 @@ function scheduleChord(
 
     osc.start(startTime);
     osc.stop(startTime + CHORD_DURATION + 0.01);
+    oscillators.push(osc);
   }
 
-  return startTime + CHORD_DURATION;
+  return { endTime: startTime + CHORD_DURATION, oscillators };
 }
 
 export interface PlayableWord {
   syllables: ChordSyllable[];
 }
 
+export interface PlaySequenceOptions {
+  octaveShift?: boolean;
+  onWordStart?: (index: number) => void;
+  destination?: AudioNode;
+}
+
 /**
  * Play a single word (one or more syllables).
- * Returns the end time.
+ * Accepts an optional external destination AudioNode.
+ * Returns the end time and analyser (only created if no external destination).
  */
 export function playWord(
   word: PlayableWord,
   octaveShift: boolean = false,
-  startTime?: number
-): { endTime: number; analyser: AnalyserNode } {
+  startTime?: number,
+  destination?: AudioNode
+): { endTime: number; analyser: AnalyserNode | null } {
   const ctx = getAudioContext();
-  const analyser = ctx.createAnalyser();
-  analyser.fftSize = 2048;
-  analyser.connect(ctx.destination);
+
+  let dest: AudioNode;
+  let analyser: AnalyserNode | null = null;
+
+  if (destination) {
+    dest = destination;
+  } else {
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.connect(ctx.destination);
+    dest = analyser;
+  }
 
   let t = startTime ?? ctx.currentTime + 0.05;
 
   for (let i = 0; i < word.syllables.length; i++) {
-    t = scheduleChord(ctx, analyser, word.syllables[i].tones, t, octaveShift);
+    const { endTime } = scheduleChord(ctx, dest, word.syllables[i].tones, t, octaveShift);
+    t = endTime;
     if (i < word.syllables.length - 1) {
       t += SYLLABLE_GAP;
     }
@@ -123,19 +143,31 @@ export function playWord(
 /**
  * Play a sequence of words (a full Rocky response).
  * Returns a promise that resolves when playback completes.
- * The onWordStart callback fires for each word index.
+ *
+ * Options:
+ *   - octaveShift: double all frequencies (emphatic mode)
+ *   - onWordStart: callback fired for each word index during playback
+ *   - destination: external AudioNode to route audio through (e.g., shared AnalyserNode)
  */
 export function playSequence(
   words: PlayableWord[],
-  octaveShift: boolean = false,
-  onWordStart?: (index: number) => void
+  options: PlaySequenceOptions = {}
 ): { promise: Promise<void>; cancel: () => void } {
+  const { octaveShift = false, onWordStart, destination } = options;
   const ctx = getAudioContext();
-  const analyser = ctx.createAnalyser();
-  analyser.fftSize = 2048;
-  analyser.connect(ctx.destination);
+
+  let dest: AudioNode;
+  if (destination) {
+    dest = destination;
+  } else {
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.connect(ctx.destination);
+    dest = analyser;
+  }
 
   let cancelled = false;
+  const allOscillators: OscillatorNode[] = [];
   let t = ctx.currentTime + 0.05;
   const wordTimes: number[] = [];
 
@@ -143,7 +175,11 @@ export function playSequence(
     wordTimes.push(t);
     const word = words[w];
     for (let s = 0; s < word.syllables.length; s++) {
-      t = scheduleChord(ctx, analyser, word.syllables[s].tones, t, octaveShift);
+      const { endTime, oscillators } = scheduleChord(
+        ctx, dest, word.syllables[s].tones, t, octaveShift
+      );
+      allOscillators.push(...oscillators);
+      t = endTime;
       if (s < word.syllables.length - 1) {
         t += SYLLABLE_GAP;
       }
@@ -154,25 +190,34 @@ export function playSequence(
   }
 
   const totalDuration = t - ctx.currentTime;
+  const timeoutIds: ReturnType<typeof setTimeout>[] = [];
 
   const promise = new Promise<void>((resolve) => {
     if (onWordStart) {
-      // Schedule callbacks for word highlights
       for (let i = 0; i < wordTimes.length; i++) {
         const delay = (wordTimes[i] - ctx.currentTime) * 1000;
-        setTimeout(() => {
+        const id = setTimeout(() => {
           if (!cancelled) onWordStart(i);
         }, Math.max(0, delay));
+        timeoutIds.push(id);
       }
     }
 
-    setTimeout(() => {
-      if (!cancelled) resolve();
+    const endId = setTimeout(() => {
+      resolve();
     }, totalDuration * 1000 + 50);
+    timeoutIds.push(endId);
   });
 
   const cancel = () => {
     cancelled = true;
+    // Clear all scheduled timeouts
+    for (const id of timeoutIds) clearTimeout(id);
+    // Fade out oscillators over 200ms instead of jarring cutoff
+    const stopTime = ctx.currentTime + RELEASE;
+    for (const osc of allOscillators) {
+      try { osc.stop(stopTime); } catch { /* already stopped */ }
+    }
   };
 
   return { promise, cancel };

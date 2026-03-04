@@ -2,59 +2,237 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── CSS Custom Properties (DESIGN.md Appendix) ────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-elevated: #1a2235;
+  --bg-inset: #060a12;
+
+  /* Amber (Eridian warmth) */
+  --amber-300: #fcd34d;
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-glow: rgba(245, 158, 11, 0.15);
+  --amber-glow-strong: rgba(245, 158, 11, 0.30);
+
+  /* Blue (Human interface) */
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+
+  /* Fidelity */
+  --fidelity-canon: #f59e0b;
+  --fidelity-audiobook: #14b8a6;
+  --fidelity-fan: #94a3b8;
+  --fidelity-ai: #a78bfa;
+
+  /* Borders */
+  --border-default: rgba(55, 65, 81, 0.50);
+  --border-subtle: rgba(55, 65, 81, 0.30);
+  --border-warm: rgba(245, 158, 11, 0.25);
+  --border-warm-strong: rgba(245, 158, 11, 0.50);
+
+  /* Text */
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --text-warm: #f59e0b;
+  --text-inverse: #0a0e1a;
+}
+
+/* ─── Base Layer ─────────────────────────────────────────────────────────── */
 @layer base {
   body {
     @apply bg-rocky-bg text-rocky-text;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }
 
-@layer components {
-  .chord-card {
-    @apply rounded-lg border border-rocky-border bg-rocky-surface p-3 transition-all hover:border-rocky-warm/40;
+/* ─── Keyframe Animations ────────────────────────────────────────────────── */
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 0.7;
+    text-shadow: 0 0 20px rgba(245, 158, 11, 0.20);
   }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 30px rgba(245, 158, 11, 0.40);
+  }
+}
 
+@keyframes message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.20);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.40);
+  }
+}
+
+@keyframes thinking-dots {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ─── Xenonite Panel Shimmer ──────────────────────────────────────────── */
+@property --xenonite-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes xenonite-rotate {
+  to {
+    --xenonite-angle: 360deg;
+  }
+}
+
+/* ─── Components Layer ───────────────────────────────────────────────────── */
+@layer components {
   .fidelity-tag {
-    @apply inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider;
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid transparent;
   }
 
   .fidelity-canon {
-    @apply bg-canon/20 text-canon;
+    background: rgba(217, 119, 6, 0.15);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.20);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.10);
   }
 
   .fidelity-audiobook {
-    @apply bg-audiobook-derived/20 text-audiobook-derived;
+    background: rgba(13, 148, 136, 0.15);
+    color: #14b8a6;
+    border-color: rgba(20, 184, 166, 0.15);
   }
 
   .fidelity-fan {
-    @apply bg-fan-extended/20 text-fan-extended;
+    background: rgba(100, 116, 139, 0.12);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.10);
   }
 
   .fidelity-ai {
-    @apply bg-ai-extended/20 text-ai-extended;
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    border-color: rgba(167, 139, 250, 0.15);
   }
 
   .glow-warm {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+    box-shadow: 0 0 20px var(--amber-glow-strong);
   }
 
-  .waveform-container {
-    @apply h-16 w-full rounded-md bg-rocky-bg/50;
+  .glass-panel {
+    background: rgba(17, 24, 39, 0.60);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    border: 1px solid var(--border-default);
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 1px rgba(245, 158, 11, 0.05),
+      0 25px 50px -12px rgba(0, 0, 0, 0.50);
   }
+
+  .message-enter {
+    animation: message-enter 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .xenonite-panel {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .xenonite-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--xenonite-angle, 0deg),
+      transparent 0%,
+      rgba(245, 158, 11, 0.12) 10%,
+      rgba(139, 92, 246, 0.08) 20%,
+      transparent 30%,
+      transparent 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: xenonite-rotate 12s linear infinite;
+  }
+
 }
 
-/* Scrollbar styling */
+/* ─── Scrollbar Styling ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-rocky-bg;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-rocky-border;
+  background: rgba(148, 163, 184, 0.20);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-rocky-muted;
+  background: rgba(148, 163, 184, 0.40);
+}
+
+/* ─── Overscroll Behavior ────────────────────────────────────────────────── */
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* ─── Skip Link (Accessibility) ──────────────────────────────────────────── */
+.skip-link {
+  @apply sr-only;
+}
+
+.skip-link:focus {
+  @apply not-sr-only fixed left-4 top-4 z-50 rounded-lg px-4 py-2 text-sm font-semibold;
+  background: var(--amber-500);
+  color: var(--text-inverse);
+}
+
+/* ─── Reduced Motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

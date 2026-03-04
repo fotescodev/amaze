@@ -30,3 +30,15 @@ npm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code / agent skills (local tooling)
+.agent/
+.agents/
+.claude/
+.mcpjam/
+.mux/
+skills/
+skills-lock.json
+
+# large binaries
+*.pdf
