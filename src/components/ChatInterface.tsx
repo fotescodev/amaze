@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import type { ChordData, RockyResponse, ChatMessage } from "@/lib/rocky-persona";
 import {
   callRockyAPI,
@@ -8,11 +9,11 @@ import {
   CONVERSATION_STARTERS,
   ERROR_RESPONSES,
 } from "@/lib/rocky-persona";
-import { LEXICON_MAP, QUESTION_PARTICLE } from "@/data/lexicon";
-import { playWord, playSequence, type PlayableWord } from "@/lib/audio-engine";
+import { LEXICON_MAP } from "@/data/lexicon";
+import type { PlayableWord } from "@/lib/audio-engine";
+import { useAudioAnalysis } from "./AudioAnalysisProvider";
+import { detectEmotion } from "@/lib/emotion-detector";
 import ChordCard from "./ChordCard";
-import WaveformVisualizer from "./WaveformVisualizer";
-import FidelityTag from "./FidelityTag";
 
 interface ChatInterfaceProps {
   apiKey: string;
@@ -22,19 +23,31 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [playingMessageIdx, setPlayingMessageIdx] = useState<number | null>(null);
-  const [highlightedWordIdx, setHighlightedWordIdx] = useState<number | null>(null);
+  const [playingMessageIdx, setPlayingMessageIdx] = useState<number | null>(
+    null
+  );
+  const [highlightedWordIdx, setHighlightedWordIdx] = useState<number | null>(
+    null
+  );
   const [octaveShift, setOctaveShift] = useState(false);
-  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
+  const audio = useAudioAnalysis();
   const learnedWordsRef = useRef<Map<string, ChordData>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
 
+  // Auto-scroll on new messages, respecting reduced motion
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    if (messages.length > prevMessageCountRef.current) {
+      const prefersReduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: prefersReduced ? "instant" : "smooth",
+      });
+    }
+    prevMessageCountRef.current = messages.length;
   }, [messages]);
 
   const sendMessage = async (text: string) => {
@@ -45,6 +58,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
+    audio.setEmotionState("thinking");
 
     try {
       const apiMessages = newMessages.map((m) => ({
@@ -63,6 +77,11 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         learnedWordsRef.current
       );
 
+      // Detect emotion from response
+      const emotion = detectEmotion(response);
+      audio.setEmotionState(emotion.state);
+      audio.setEmotionIntensity(emotion.intensity);
+
       const assistantMessage: ChatMessage = {
         role: "assistant",
         content: response.rocky_english,
@@ -79,6 +98,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         content: fallback.rocky_english,
         rockyResponse: fallback,
       };
+      audio.setEmotionState("neutral");
       setMessages([...newMessages, assistantMessage]);
     } finally {
       setIsLoading(false);
@@ -100,64 +120,77 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
 
     setPlayingMessageIdx(msgIdx);
 
-    // Create analyser for visualization
-    const audioCtx = new AudioContext();
-    const newAnalyser = audioCtx.createAnalyser();
-    newAnalyser.fftSize = 2048;
-    setAnalyser(newAnalyser);
-    audioCtx.close(); // We'll use the engine's context
-
-    const { promise } = playSequence(words, octaveShift, (wordIdx) => {
-      setHighlightedWordIdx(wordIdx);
-    });
-
-    promise.then(() => {
-      setPlayingMessageIdx(null);
-      setHighlightedWordIdx(null);
-      setAnalyser(null);
-    });
+    audio
+      .playChords(words, octaveShift, (wordIdx) => {
+        setHighlightedWordIdx(wordIdx);
+      })
+      .then(() => {
+        setPlayingMessageIdx(null);
+        setHighlightedWordIdx(null);
+      });
   };
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header controls */}
-      <div className="flex items-center justify-between border-b border-rocky-border px-4 py-2">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-rocky-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="text-rocky-warm font-mono text-lg">◈~⊕~◈</span>
-          <span className="text-sm font-semibold text-rocky-text">
-            Talk to Rocky
+          <span
+            className="font-mono text-lg text-rocky-warm"
+            style={{
+              animation: "gentle-pulse 4s ease-in-out infinite",
+              textShadow: "0 0 20px rgba(245, 158, 11, 0.20)",
+            }}
+            aria-hidden="true"
+          >
+            ◈~⊕~◈
           </span>
+          <h1 className="text-sm font-semibold text-rocky-text">
+            Talk to Rocky
+          </h1>
         </div>
         <button
           onClick={() => setOctaveShift(!octaveShift)}
-          className={`rounded-full px-3 py-1 text-xs transition-colors ${
+          aria-pressed={octaveShift}
+          aria-label={
+            octaveShift
+              ? "Emphatic mode enabled, click to switch to normal mode"
+              : "Normal mode enabled, click to switch to emphatic mode"
+          }
+          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] ${
             octaveShift
               ? "bg-rocky-warm text-rocky-bg font-semibold"
-              : "bg-rocky-surface text-rocky-muted border border-rocky-border hover:text-rocky-text"
+              : "border border-rocky-border bg-rocky-surface text-rocky-muted hover:text-rocky-text hover:border-[rgba(245,158,11,0.25)]"
           }`}
-          title="Octave shift for emotional emphasis (canon)"
         >
           {octaveShift ? "Emphatic Mode" : "Normal Mode"}
         </button>
       </div>
 
-      {/* Waveform */}
-      <div className="border-b border-rocky-border px-4 py-2">
-        <WaveformVisualizer
-          analyser={analyser}
-          isPlaying={playingMessageIdx !== null}
-        />
-      </div>
+      {/* Visualizer placeholder — PentagonalChordViz will go here */}
 
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        role="log"
+        aria-live="polite"
+        aria-label="Conversation with Rocky"
+        className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6"
       >
+        {/* Empty state: conversation starters */}
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-6 py-12">
+          <div className="flex flex-col items-center justify-center gap-8 py-12">
             <div className="text-center">
-              <div className="text-4xl text-rocky-warm font-mono mb-2">◈~⊕~◈</div>
+              <div
+                className="mb-3 font-mono text-5xl text-rocky-warm"
+                style={{
+                  animation: "gentle-pulse 4s ease-in-out infinite",
+                  textShadow: "0 0 30px rgba(245, 158, 11, 0.30)",
+                }}
+                aria-hidden="true"
+              >
+                ◈~⊕~◈
+              </div>
               <h2 className="text-xl font-semibold text-rocky-text">
                 Talk to Rocky
               </h2>
@@ -166,12 +199,12 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 w-full max-w-sm">
+            <div className="flex w-full max-w-sm flex-col gap-2">
               {CONVERSATION_STARTERS.map((starter) => (
                 <button
                   key={starter}
                   onClick={() => sendMessage(starter)}
-                  className="rounded-lg border border-rocky-border bg-rocky-surface px-4 py-3 text-left text-sm text-rocky-text transition-colors hover:border-rocky-warm/40 hover:bg-rocky-warm/5"
+                  className="rounded-[10px] border border-rocky-border bg-rocky-surface px-4 py-3 text-left text-sm text-rocky-text transition-colors duration-200 hover:border-[rgba(245,158,11,0.25)] hover:bg-[rgba(245,158,11,0.04)] hover:shadow-[0_0_12px_rgba(245,158,11,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
                 >
                   {starter}
                 </button>
@@ -180,89 +213,185 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
           </div>
         )}
 
+        {/* Message list */}
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`flex ${
+            className={`message-enter flex ${
               msg.role === "user" ? "justify-end" : "justify-start"
             }`}
           >
             {msg.role === "user" ? (
-              <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-rocky-warm/20 px-4 py-2 text-sm text-rocky-text">
+              /* User message bubble — warm amber tint */
+              <div
+                className="max-w-[80%] px-4 py-3 text-sm leading-relaxed text-rocky-text"
+                style={{
+                  background: "rgba(245, 158, 11, 0.08)",
+                  border: "1px solid rgba(245, 158, 11, 0.15)",
+                  borderRadius: "16px 16px 4px 16px",
+                }}
+              >
                 {msg.content}
               </div>
             ) : (
-              <div className="max-w-[90%] space-y-3">
-                {/* Rocky's English text */}
-                <div className="rounded-2xl rounded-bl-sm border border-rocky-border bg-rocky-surface px-4 py-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-rocky-text leading-relaxed">
-                      {msg.content}
-                    </p>
-                    {msg.rockyResponse &&
-                      msg.rockyResponse.chords.length > 0 && (
-                        <button
-                          onClick={() =>
-                            playResponse(idx, msg.rockyResponse!)
-                          }
-                          disabled={playingMessageIdx !== null}
-                          className={`shrink-0 rounded-full p-2 transition-colors ${
-                            playingMessageIdx === idx
-                              ? "bg-rocky-warm text-rocky-bg animate-pulse"
-                              : "bg-rocky-bg text-rocky-warm hover:bg-rocky-warm/20"
-                          }`}
-                          title="Play full response as Eridian chords"
-                        >
-                          <svg
-                            className="h-4 w-4"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </button>
-                      )}
-                  </div>
+              /* Rocky message — dark glass panel with avatar */
+              <div className="flex max-w-[90%] gap-3">
+                {/* Rocky avatar */}
+                <div className="mt-1 shrink-0">
+                  <Image
+                    src="/rocky-avatar.svg"
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                    aria-hidden="true"
+                  />
                 </div>
 
-                {/* Chord notation row */}
-                {msg.rockyResponse &&
-                  msg.rockyResponse.chords.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {msg.rockyResponse.chords.map((chord, ci) => (
-                        <ChordCard
-                          key={`${chord.word}-${ci}`}
-                          chordData={chord}
-                          isHighlighted={
-                            playingMessageIdx === idx &&
-                            highlightedWordIdx === ci
-                          }
-                          compact
-                        />
-                      ))}
+                <div className="space-y-3">
+                  {/* Rocky's English text bubble */}
+                  <div
+                    className="px-4 py-3"
+                    style={{
+                      background: "rgba(17, 24, 39, 0.70)",
+                      backdropFilter: "blur(12px)",
+                      WebkitBackdropFilter: "blur(12px)",
+                      border: "1px solid rgba(55, 65, 81, 0.50)",
+                      borderRadius: "16px 16px 16px 4px",
+                      boxShadow: "inset 3px 0 0 0 rgba(245, 158, 11, 0.15)",
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm leading-relaxed text-rocky-text">
+                        {msg.content}
+                      </p>
+                      {msg.rockyResponse &&
+                        msg.rockyResponse.chords.length > 0 && (
+                          <button
+                            onClick={() =>
+                              playResponse(idx, msg.rockyResponse!)
+                            }
+                            disabled={playingMessageIdx !== null}
+                            aria-label="Play response as Eridian chords"
+                            className={`shrink-0 rounded-full p-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] ${
+                              playingMessageIdx === idx
+                                ? "bg-rocky-warm text-rocky-bg"
+                                : "border border-rocky-border-subtle bg-rocky-inset text-rocky-warm hover:border-[rgba(245,158,11,0.25)] hover:bg-[rgba(245,158,11,0.10)]"
+                            }`}
+                            style={
+                              playingMessageIdx === idx
+                                ? {
+                                    animation:
+                                      "pulse-glow 1.5s ease-in-out infinite",
+                                  }
+                                : undefined
+                            }
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </button>
+                        )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Chord notation row */}
+                  {msg.rockyResponse &&
+                    msg.rockyResponse.chords.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.rockyResponse.chords.map((chord, ci) => (
+                          <ChordCard
+                            key={`${chord.word}-${ci}`}
+                            chordData={chord}
+                            isHighlighted={
+                              playingMessageIdx === idx &&
+                              highlightedWordIdx === ci
+                            }
+                            compact
+                          />
+                        ))}
+                      </div>
+                    )}
+                </div>
               </div>
             )}
           </div>
         ))}
 
+        {/* Loading state: Rocky is thinking */}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-sm border border-rocky-border bg-rocky-surface px-4 py-3">
-              <div className="flex items-center gap-2 text-sm text-rocky-muted">
-                <span className="font-mono text-rocky-warm animate-pulse">
-                  ◉ ◉ ◉
-                </span>
-                <span>Rocky is thinking...</span>
+          <div className="message-enter flex justify-start">
+            <div className="flex max-w-[90%] gap-3">
+              {/* Rocky avatar */}
+              <div className="mt-1 shrink-0">
+                <Image
+                  src="/rocky-avatar.svg"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                  aria-hidden="true"
+                />
+              </div>
+
+              <div
+                className="px-4 py-3"
+                style={{
+                  background: "rgba(17, 24, 39, 0.70)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  border: "1px solid rgba(55, 65, 81, 0.50)",
+                  borderRadius: "16px 16px 16px 4px",
+                  boxShadow: "inset 3px 0 0 0 rgba(245, 158, 11, 0.15)",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex gap-1.5 font-mono text-rocky-warm" aria-hidden="true">
+                    <span
+                      style={{
+                        animation: "thinking-dots 1.2s ease-in-out infinite",
+                        animationDelay: "0ms",
+                      }}
+                    >
+                      ◉
+                    </span>
+                    <span
+                      style={{
+                        animation: "thinking-dots 1.2s ease-in-out infinite",
+                        animationDelay: "200ms",
+                      }}
+                    >
+                      ◉
+                    </span>
+                    <span
+                      style={{
+                        animation: "thinking-dots 1.2s ease-in-out infinite",
+                        animationDelay: "400ms",
+                      }}
+                    >
+                      ◉
+                    </span>
+                  </span>
+                  <span className="text-sm text-rocky-muted">
+                    Rocky is thinking\u2026
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Input */}
-      <div className="border-t border-rocky-border px-4 py-3">
+      {/* Input area */}
+      <div
+        className="border-t border-rocky-border px-4 py-3"
+        style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -274,14 +403,16 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Talk to Rocky..."
+            placeholder="Talk to Rocky\u2026"
             disabled={isLoading}
-            className="flex-1 rounded-lg border border-rocky-border bg-rocky-surface px-4 py-2 text-sm text-rocky-text placeholder-rocky-muted outline-none focus:border-rocky-warm/50 transition-colors"
+            aria-label="Message to Rocky"
+            autoComplete="off"
+            className="flex-1 rounded-[10px] border border-rocky-border bg-rocky-inset px-4 py-2.5 text-sm text-rocky-text placeholder-rocky-dim transition-colors duration-200 focus-visible:border-[rgba(245,158,11,0.25)] focus-visible:shadow-[0_0_0_3px_rgba(245,158,11,0.10)] focus-visible:outline-none"
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="rounded-lg bg-rocky-warm px-4 py-2 text-sm font-semibold text-rocky-bg transition-colors hover:bg-rocky-warm/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-[10px] bg-rocky-warm px-5 py-2.5 text-sm font-semibold text-rocky-bg transition-colors duration-200 hover:bg-rocky-warm-hover hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Send
           </button>

@@ -185,48 +185,107 @@ export async function callRockyAPI(
 }
 
 /**
+ * Extract the first balanced JSON object from a string.
+ * Uses brace counting to handle nested objects correctly.
+ */
+function extractJsonObject(text: string): string | null {
+  const startIdx = text.indexOf("{");
+  if (startIdx === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = startIdx; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        return text.substring(startIdx, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Parse Claude's response, handling JSON extraction robustly.
  */
 export function parseRockyResponse(text: string): RockyResponse {
+  const trimmed = text.trim();
+
   // Try direct JSON parse first
   try {
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(trimmed);
     if (parsed.rocky_english && Array.isArray(parsed.chords)) {
       return parsed;
     }
   } catch {
-    // Not direct JSON, try to extract it
+    // Not direct JSON, try extraction
   }
 
   // Try to extract JSON from markdown code fences
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) {
     try {
-      const parsed = JSON.parse(jsonMatch[1].trim());
+      const parsed = JSON.parse(fenceMatch[1].trim());
       if (parsed.rocky_english && Array.isArray(parsed.chords)) {
         return parsed;
       }
     } catch {
-      // Failed to parse extracted JSON
+      // Failed to parse fenced JSON
     }
   }
 
-  // Try to find JSON object in the text
-  const braceMatch = text.match(/\{[\s\S]*"rocky_english"[\s\S]*\}/);
-  if (braceMatch) {
+  // Extract first balanced JSON object from the text
+  const jsonStr = extractJsonObject(trimmed);
+  if (jsonStr) {
     try {
-      const parsed = JSON.parse(braceMatch[0]);
+      const parsed = JSON.parse(jsonStr);
       if (parsed.rocky_english && Array.isArray(parsed.chords)) {
         return parsed;
       }
+      // Has rocky_english but missing chords array — still usable
+      if (parsed.rocky_english) {
+        return { rocky_english: parsed.rocky_english, chords: parsed.chords ?? [] };
+      }
     } catch {
-      // Failed
+      // JSON object found but parse failed — try field extraction as last resort
+    }
+  }
+
+  // Last resort: regex-extract the rocky_english value from malformed JSON
+  const fieldMatch = trimmed.match(/"rocky_english"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (fieldMatch) {
+    try {
+      // Unescape the matched string value
+      const english = JSON.parse(`"${fieldMatch[1]}"`);
+      return { rocky_english: english, chords: [] };
+    } catch {
+      // Use the raw match
+      return { rocky_english: fieldMatch[1], chords: [] };
     }
   }
 
   // Fallback: treat entire text as English, no chords
   return {
-    rocky_english: text || "Is problem. Signal bad. Rocky try again?",
+    rocky_english: trimmed || "Is problem. Signal bad. Rocky try again?",
     chords: [],
   };
 }
@@ -237,6 +296,8 @@ export const CONVERSATION_STARTERS = [
   "Hello, Rocky! What is Erid like?",
   "Rocky, how does your ship work?",
   "What do you think about humans?",
+  "Tell me about astrophage.",
+  "Rocky, are you scared?",
 ];
 
 // ─── Error Messages (in character, PRD §9.4) ─────────────────────────────────
