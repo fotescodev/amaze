@@ -6,7 +6,7 @@ import ChatInterface from "@/components/ChatInterface";
 import LexiconExplorer from "@/components/LexiconExplorer";
 import AudioAnalysisProvider from "@/components/AudioAnalysisProvider";
 import { LEXICON_MAP } from "@/data/lexicon";
-import { playSequence } from "@/lib/audio-engine";
+import { playSequence, ensureAudioReady } from "@/lib/audio-engine";
 
 type Tab = "chat" | "lexicon";
 
@@ -75,7 +75,7 @@ function RockyQuoteCarousel() {
 
   const quote = ROCKY_QUOTES[index];
 
-  const playQuoteChords = useCallback(() => {
+  const playQuoteChords = useCallback(async () => {
     if (isPlaying) {
       cancelRef.current?.();
       setIsPlaying(false);
@@ -87,6 +87,9 @@ function RockyQuoteCarousel() {
       .filter(Boolean);
 
     if (words.length === 0) return;
+
+    // Must await resume inside user gesture for iOS
+    await ensureAudioReady();
 
     setIsPlaying(true);
     const { promise, cancel } = playSequence(
@@ -124,7 +127,7 @@ function RockyQuoteCarousel() {
 
         {/* Context + play hint */}
         <p
-          className={`mt-1.5 text-[11px] text-rocky-dim transition-opacity duration-300 ease-in-out ${
+          className={`mt-1.5 text-xs text-rocky-dim transition-opacity duration-300 ease-in-out ${
             fading ? "opacity-0" : "opacity-100"
           }`}
         >
@@ -221,7 +224,7 @@ export default function Home() {
 
           {/* Eridian glyph with gentle pulse */}
           <div
-            className="font-mono text-[3rem] leading-none text-rocky-warm motion-safe:animate-gentle-pulse"
+            className="font-mono text-3xl sm:text-[3rem] leading-none text-rocky-warm motion-safe:animate-gentle-pulse"
             aria-hidden="true"
             style={{
               textShadow: "0 0 30px rgba(245, 158, 11, 0.30)",
@@ -233,7 +236,7 @@ export default function Home() {
           {/* Title */}
           <div>
             <h1
-              className="text-[2.5rem] font-bold tracking-tight text-rocky-text"
+              className="text-3xl sm:text-[2.5rem] font-bold tracking-tight text-rocky-text"
               style={{ letterSpacing: "-0.02em" }}
             >
               Talk to Rocky
@@ -262,9 +265,9 @@ export default function Home() {
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-\u2026"
+                placeholder="sk-ant-…"
                 autoComplete="off"
-                className="w-full rounded-[10px] border border-rocky-border bg-[#060a12] px-4 py-2.5 text-sm text-rocky-text placeholder-rocky-dim font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rocky-warm/50 focus-visible:ring-offset-2 focus-visible:ring-offset-rocky-bg transition-[border-color,box-shadow] duration-200 ease-in-out"
+                className="w-full rounded-[10px] border border-rocky-border bg-[#060a12] px-4 py-3 text-sm text-rocky-text placeholder-rocky-dim font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rocky-warm/50 focus-visible:ring-offset-2 focus-visible:ring-offset-rocky-bg transition-[border-color,box-shadow] duration-200 ease-in-out"
                 style={{
                   boxShadow: "none",
                 }}
@@ -284,7 +287,7 @@ export default function Home() {
                   }
                 }}
               />
-              <p className="mt-2 text-[11px] text-rocky-muted">
+              <p className="mt-2 text-xs text-rocky-muted">
                 Your key is used client-side only. Never stored or transmitted
                 to any server.
               </p>
@@ -293,14 +296,14 @@ export default function Home() {
             <button
               onClick={() => apiKey.trim() && setIsKeySet(true)}
               disabled={!apiKey.trim()}
-              className="w-full rounded-[10px] bg-rocky-warm py-2.5 text-sm font-semibold text-[#0a0e1a] transition-[background-color,box-shadow,transform] duration-200 ease-in-out hover:bg-[#fbbf24] hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] active:scale-[0.98] active:bg-[#d97706] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rocky-warm/50 focus-visible:ring-offset-2 focus-visible:ring-offset-rocky-bg"
+              className="w-full rounded-[10px] bg-rocky-warm py-3 text-sm font-semibold text-[#0a0e1a] transition-[background-color,box-shadow,transform] duration-200 ease-in-out hover:bg-[#fbbf24] hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] active:scale-[0.98] active:bg-[#d97706] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rocky-warm/50 focus-visible:ring-offset-2 focus-visible:ring-offset-rocky-bg"
             >
               Enter the Hail Mary
             </button>
           </div>
 
           {/* Footer disclaimer */}
-          <footer className="text-[11px] text-rocky-dim">
+          <footer className="text-xs text-rocky-dim">
             A fan project inspired by{" "}
             <span className="text-rocky-muted">Project Hail Mary</span> by Andy
             Weir.

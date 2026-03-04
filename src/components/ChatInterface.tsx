@@ -160,7 +160,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
               ? "Emphatic mode enabled, click to switch to normal mode"
               : "Normal mode enabled, click to switch to emphatic mode"
           }
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] ${
+          className={`rounded-full px-3 py-2 min-h-[44px] text-xs font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] ${
             octaveShift
               ? "bg-rocky-warm text-rocky-bg font-semibold"
               : "border border-rocky-border bg-rocky-surface text-rocky-muted hover:text-rocky-text hover:border-[rgba(245,158,11,0.25)]"
@@ -172,12 +172,11 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
 
       {/* Pentagonal Chord Visualizer */}
       <div
-        className="border-b border-rocky-border px-4 py-2"
+        className="border-b border-rocky-border px-4 py-2 h-20 sm:h-[120px]"
         style={{
           background: "var(--bg-inset)",
           border: "1px solid rgba(55, 65, 81, 0.30)",
           borderRadius: "0",
-          height: "120px",
         }}
       >
         <PentagonalChordViz mode="live" />
@@ -219,7 +218,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
                 <button
                   key={starter}
                   onClick={() => sendMessage(starter)}
-                  className="rounded-[10px] border border-rocky-border bg-rocky-surface px-4 py-3 text-left text-sm text-rocky-text transition-colors duration-200 hover:border-[rgba(245,158,11,0.25)] hover:bg-[rgba(245,158,11,0.04)] hover:shadow-[0_0_12px_rgba(245,158,11,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
+                  className="rounded-[10px] border border-rocky-border bg-rocky-surface px-4 py-3.5 text-left text-sm text-rocky-text transition-colors duration-200 hover:border-[rgba(245,158,11,0.25)] hover:bg-[rgba(245,158,11,0.04)] hover:shadow-[0_0_12px_rgba(245,158,11,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
                 >
                   {starter}
                 </button>
@@ -284,7 +283,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
                             }
                             disabled={playingMessageIdx !== null}
                             aria-label="Play response as Eridian chords"
-                            className={`shrink-0 rounded-full p-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] ${
+                            className={`shrink-0 rounded-full p-2.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] ${
                               playingMessageIdx === idx
                                 ? "bg-rocky-warm text-rocky-bg"
                                 : "border border-rocky-border-subtle bg-rocky-inset text-rocky-warm hover:border-[rgba(245,158,11,0.25)] hover:bg-[rgba(245,158,11,0.10)]"
@@ -408,16 +407,16 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Talk to Rocky\u2026"
+            placeholder="Talk to Rocky…"
             disabled={isLoading}
             aria-label="Message to Rocky"
             autoComplete="off"
-            className="flex-1 rounded-[10px] border border-rocky-border bg-rocky-inset px-4 py-2.5 text-sm text-rocky-text placeholder-rocky-dim transition-colors duration-200 focus-visible:border-[rgba(245,158,11,0.25)] focus-visible:shadow-[0_0_0_3px_rgba(245,158,11,0.10)] focus-visible:outline-none"
+            className="flex-1 rounded-[10px] border border-rocky-border bg-rocky-inset px-4 py-3 text-sm text-rocky-text placeholder-rocky-dim transition-colors duration-200 focus-visible:border-[rgba(245,158,11,0.25)] focus-visible:shadow-[0_0_0_3px_rgba(245,158,11,0.10)] focus-visible:outline-none"
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="rounded-[10px] bg-rocky-warm px-5 py-2.5 text-sm font-semibold text-rocky-bg transition-colors duration-200 hover:bg-rocky-warm-hover hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-[10px] bg-rocky-warm px-5 py-3 text-sm font-semibold text-rocky-bg transition-colors duration-200 hover:bg-rocky-warm-hover hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Send
           </button>
