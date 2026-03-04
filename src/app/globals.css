@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-rocky-bg text-rocky-text;
+  }
+}
+
+@layer components {
+  .chord-card {
+    @apply rounded-lg border border-rocky-border bg-rocky-surface p-3 transition-all hover:border-rocky-warm/40;
+  }
+
+  .fidelity-tag {
+    @apply inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider;
+  }
+
+  .fidelity-canon {
+    @apply bg-canon/20 text-canon;
+  }
+
+  .fidelity-audiobook {
+    @apply bg-audiobook-derived/20 text-audiobook-derived;
+  }
+
+  .fidelity-fan {
+    @apply bg-fan-extended/20 text-fan-extended;
+  }
+
+  .fidelity-ai {
+    @apply bg-ai-extended/20 text-ai-extended;
+  }
+
+  .glow-warm {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+  }
+
+  .waveform-container {
+    @apply h-16 w-full rounded-md bg-rocky-bg/50;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-rocky-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-rocky-border;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-rocky-muted;
+}
