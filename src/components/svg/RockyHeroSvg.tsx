@@ -17,6 +17,7 @@ import { motion, type MotionProps } from "framer-motion";
 
 interface RockyHeroSvgProps {
   className?: string;
+  style?: React.CSSProperties;
   soundWavesProps?: MotionProps;
   bodyProps?: MotionProps;
   coreGlowProps?: MotionProps;
@@ -26,6 +27,7 @@ interface RockyHeroSvgProps {
 
 export default function RockyHeroSvg({
   className,
+  style,
   soundWavesProps,
   bodyProps,
   coreGlowProps,
@@ -39,6 +41,7 @@ export default function RockyHeroSvg({
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 400 350"
       className={className}
+      style={style}
       role="img"
       aria-label="Rocky the Eridian"
     >

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import type { ChordData, RockyResponse, ChatMessage } from "@/lib/rocky-persona";
 import {
   callRockyAPI,
@@ -12,8 +11,11 @@ import {
 import { LEXICON_MAP } from "@/data/lexicon";
 import type { PlayableWord } from "@/lib/audio-engine";
 import { useAudioAnalysis } from "./AudioAnalysisProvider";
-import { detectEmotion } from "@/lib/emotion-detector";
+import { detectEmotion, type EmotionState } from "@/lib/emotion-detector";
 import ChordCard from "./ChordCard";
+import PentagonalChordViz from "./PentagonalChordViz";
+import ReactiveRockyHero from "./ReactiveRockyHero";
+import ReactiveRockyAvatar from "./ReactiveRockyAvatar";
 
 interface ChatInterfaceProps {
   apiKey: string;
@@ -30,6 +32,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
     null
   );
   const [octaveShift, setOctaveShift] = useState(false);
+  const [messageEmotions, setMessageEmotions] = useState<Map<number, EmotionState>>(new Map());
 
   const audio = useAudioAnalysis();
   const learnedWordsRef = useRef<Map<string, ChordData>>(new Map());
@@ -88,7 +91,9 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         rockyResponse: response,
       };
 
+      const msgIdx = newMessages.length;
       setMessages([...newMessages, assistantMessage]);
+      setMessageEmotions((prev) => new Map(prev).set(msgIdx, emotion.state));
     } catch (error) {
       console.error("Rocky API error:", error);
       const fallback =
@@ -99,7 +104,9 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         rockyResponse: fallback,
       };
       audio.setEmotionState("neutral");
+      const msgIdx = newMessages.length;
       setMessages([...newMessages, assistantMessage]);
+      setMessageEmotions((prev) => new Map(prev).set(msgIdx, "neutral"));
     } finally {
       setIsLoading(false);
     }
@@ -135,16 +142,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-rocky-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <span
-            className="font-mono text-lg text-rocky-warm"
-            style={{
-              animation: "gentle-pulse 4s ease-in-out infinite",
-              textShadow: "0 0 20px rgba(245, 158, 11, 0.20)",
-            }}
-            aria-hidden="true"
-          >
-            ◈~⊕~◈
-          </span>
+          <ReactiveRockyHero className="h-10 w-10 drop-shadow-[0_0_12px_rgba(245,158,11,0.20)]" />
           <h1 className="text-sm font-semibold text-rocky-text">
             Talk to Rocky
           </h1>
@@ -167,7 +165,18 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         </button>
       </div>
 
-      {/* Visualizer placeholder — PentagonalChordViz will go here */}
+      {/* Pentagonal Chord Visualizer */}
+      <div
+        className="border-b border-rocky-border px-4 py-2"
+        style={{
+          background: "var(--bg-inset)",
+          border: "1px solid rgba(55, 65, 81, 0.30)",
+          borderRadius: "0",
+          height: "120px",
+        }}
+      >
+        <PentagonalChordViz mode="live" />
+      </div>
 
       {/* Messages */}
       <div
@@ -238,13 +247,9 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
               <div className="flex max-w-[90%] gap-3">
                 {/* Rocky avatar */}
                 <div className="mt-1 shrink-0">
-                  <Image
-                    src="/rocky-avatar.svg"
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="rounded-full"
-                    aria-hidden="true"
+                  <ReactiveRockyAvatar
+                    isActive={playingMessageIdx === idx}
+                    emotion={messageEmotions.get(idx) ?? "neutral"}
                   />
                 </div>
 
@@ -327,16 +332,9 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         {isLoading && (
           <div className="message-enter flex justify-start">
             <div className="flex max-w-[90%] gap-3">
-              {/* Rocky avatar */}
+              {/* Rocky avatar — thinking state */}
               <div className="mt-1 shrink-0">
-                <Image
-                  src="/rocky-avatar.svg"
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                  aria-hidden="true"
-                />
+                <ReactiveRockyAvatar isActive={false} isThinking />
               </div>
 
               <div
