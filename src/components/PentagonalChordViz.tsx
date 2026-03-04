@@ -12,7 +12,7 @@
  */
 
 import { useRef, useEffect, useCallback } from "react";
-import { useAudioAnalysis } from "./AudioAnalysisProvider";
+import { useOptionalAudioAnalysis } from "./AudioAnalysisProvider";
 
 interface PentagonalChordVizProps {
   mode: "live" | "static";
@@ -91,8 +91,8 @@ export default function PentagonalChordViz({
   const particlesRef = useRef<ParticleState[]>([]);
   const frequencyDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
 
-  // Only use context in live mode
-  const audio = mode === "live" ? useAudioAnalysis() : null;
+  // Always call the hook (Rules of Hooks), returns null outside provider
+  const audio = useOptionalAudioAnalysis();
 
   // Initialize particles
   useEffect(() => {

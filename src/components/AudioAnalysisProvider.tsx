@@ -56,6 +56,11 @@ export function useAudioAnalysis(): AudioAnalysisContextValue {
   return ctx;
 }
 
+/** Non-throwing variant for components that may render outside the provider. */
+export function useOptionalAudioAnalysis(): AudioAnalysisContextValue | null {
+  return useContext(AudioAnalysisContext);
+}
+
 export default function AudioAnalysisProvider({
   children,
 }: {

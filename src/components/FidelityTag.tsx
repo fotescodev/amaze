@@ -2,13 +2,33 @@
 
 import type { Fidelity } from "@/data/lexicon";
 
-const TAG_CLASSES: Record<Fidelity, string> = {
-  CANON: "fidelity-tag fidelity-canon",
-  "AUDIOBOOK-DERIVED": "fidelity-tag fidelity-audiobook",
-  "FAN-EXTENDED": "fidelity-tag fidelity-fan",
-  "AI-EXTENDED": "fidelity-tag fidelity-ai",
+const FIDELITY_CONFIG: Record<
+  Fidelity,
+  { classes: string; title: string }
+> = {
+  CANON: {
+    classes: "fidelity-tag fidelity-canon",
+    title: "Canon — directly from the novel text",
+  },
+  "AUDIOBOOK-DERIVED": {
+    classes: "fidelity-tag fidelity-audiobook",
+    title: "Audiobook-derived — inferred from the audiobook performance",
+  },
+  "FAN-EXTENDED": {
+    classes: "fidelity-tag fidelity-fan",
+    title: "Fan-extended — community interpretation consistent with canon rules",
+  },
+  "AI-EXTENDED": {
+    classes: "fidelity-tag fidelity-ai",
+    title: "AI-extended — generated to fill gaps using canonical constraints",
+  },
 };
 
 export default function FidelityTag({ fidelity }: { fidelity: Fidelity }) {
-  return <span className={TAG_CLASSES[fidelity]}>{fidelity}</span>;
+  const { classes, title } = FIDELITY_CONFIG[fidelity];
+  return (
+    <span className={classes} title={title}>
+      {fidelity}
+    </span>
+  );
 }
