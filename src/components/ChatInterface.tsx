@@ -16,6 +16,8 @@ import ChordCard from "./ChordCard";
 import PentagonalChordViz from "./PentagonalChordViz";
 import ReactiveRockyHero from "./ReactiveRockyHero";
 import ReactiveRockyAvatar from "./ReactiveRockyAvatar";
+import AtmosphereLayer from "./AtmosphereLayer";
+import XenonitePanel from "./XenonitePanel";
 
 interface ChatInterfaceProps {
   apiKey: string;
@@ -139,6 +141,9 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
 
   return (
     <div className="flex h-full flex-col">
+      {/* Background atmosphere particles */}
+      <AtmosphereLayer />
+
       {/* Header */}
       <div className="flex items-center justify-between border-b border-rocky-border px-4 py-3">
         <div className="flex items-center gap-3">
@@ -179,13 +184,14 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
       </div>
 
       {/* Messages */}
-      <div
-        ref={scrollRef}
-        role="log"
-        aria-live="polite"
-        aria-label="Conversation with Rocky"
-        className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6"
-      >
+      <XenonitePanel className="flex-1 overflow-hidden">
+        <div
+          ref={scrollRef}
+          role="log"
+          aria-live="polite"
+          aria-label="Conversation with Rocky"
+          className="h-full space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6"
+        >
         {/* Empty state: conversation starters */}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-8 py-12">
@@ -383,7 +389,8 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </XenonitePanel>
 
       {/* Input area */}
       <div
