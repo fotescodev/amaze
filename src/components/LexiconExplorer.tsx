@@ -50,8 +50,8 @@ export default function LexiconExplorer() {
               aria-controls={panelId}
               onClick={() => setActiveCluster(name)}
               className={[
-                "rounded-full px-3 py-1.5 text-xs font-medium",
-                "min-h-[36px]",
+                "rounded-full px-3.5 py-2 text-xs font-medium",
+                "min-h-[44px]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]",
               ].join(" ")}
               style={{
@@ -92,7 +92,7 @@ export default function LexiconExplorer() {
 
       {/* Fidelity disclaimer footer */}
       <footer
-        className="rounded-xl p-4 text-[11px] leading-relaxed"
+        className="rounded-xl p-4 text-xs leading-relaxed"
         style={{
           background: "rgba(6, 10, 18, 0.60)",
           border: "1px solid rgba(55, 65, 81, 0.30)",

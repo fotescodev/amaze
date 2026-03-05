@@ -21,6 +21,7 @@ import {
 } from "react";
 import {
   getAudioContext,
+  ensureAudioReady,
   playSequence,
   type PlayableWord,
 } from "@/lib/audio-engine";
@@ -145,10 +146,8 @@ export default function AudioAnalysisProvider({
         cancelRef.current = null;
       }
 
-      const ctx = getAudioContext();
-      if (ctx.state === "suspended") {
-        await ctx.resume();
-      }
+      // Must await resume inside user gesture for iOS
+      await ensureAudioReady();
 
       const analyser = ensureAnalyser();
       setIsPlaying(true);

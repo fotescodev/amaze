@@ -32,10 +32,19 @@ export function getAudioContext(): AudioContext {
   if (!audioContext) {
     audioContext = new AudioContext();
   }
-  if (audioContext.state === "suspended") {
-    audioContext.resume();
-  }
   return audioContext;
+}
+
+/**
+ * Ensure AudioContext is running. Must be called (and awaited) inside
+ * a user-gesture handler on iOS/Safari — otherwise audio stays silent.
+ */
+export async function ensureAudioReady(): Promise<AudioContext> {
+  const ctx = getAudioContext();
+  if (ctx.state === "suspended") {
+    await ctx.resume();
+  }
+  return ctx;
 }
 
 /**
