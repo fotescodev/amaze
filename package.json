@@ -4,10 +4,9 @@
   "description": "A fan-built, AI-enabled Eridian communication interface from Project Hail Mary",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "npx serve .",
+    "build": "echo 'Static site - no build step'",
+    "start": "npx serve ."
   },
   "dependencies": {
     "framer-motion": "^12.35.0",
