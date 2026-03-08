@@ -16,22 +16,37 @@ export function createCage(scene) {
   const icoGeo = new THREE.IcosahedronGeometry(radius, detail);
 
   // ---- Glass Faces ----
-  const glassMaterial = new THREE.MeshPhysicalMaterial({
-    transmission: 1.0,
-    opacity: 1.0,
-    transparent: true,
-    metalness: 0.0,
-    roughness: 0.05,
-    ior: 1.65,
-    thickness: 0.5,
-    envMapIntensity: 1.5,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.1,
-    side: THREE.DoubleSide,
-    color: new THREE.Color(0xffffff),
-    attenuationColor: new THREE.Color(0xccddff),
-    attenuationDistance: 8.0
-  });
+  // Detect mobile/low-end — transmission requires WebGL extensions that
+  // many mobile GPUs don't support, causing a fully opaque black sphere.
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || window.innerWidth < 768;
+
+  const glassMaterial = isMobile
+    ? new THREE.MeshStandardMaterial({
+        color: 0xaabbdd,
+        transparent: true,
+        opacity: 0.15,
+        roughness: 0.1,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    : new THREE.MeshPhysicalMaterial({
+        transmission: 1.0,
+        opacity: 1.0,
+        transparent: true,
+        metalness: 0.0,
+        roughness: 0.05,
+        ior: 1.65,
+        thickness: 0.5,
+        envMapIntensity: 1.5,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        side: THREE.DoubleSide,
+        color: new THREE.Color(0xffffff),
+        attenuationColor: new THREE.Color(0xccddff),
+        attenuationDistance: 8.0
+      });
 
   const glassMesh = new THREE.Mesh(icoGeo, glassMaterial);
   glassMesh.renderOrder = 1;

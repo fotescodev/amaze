@@ -11,7 +11,11 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 let scene, camera, renderer, composer, controls;
 let rimLight;
+let useComposer = true;
 const clock = new THREE.Clock();
+
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  || window.innerWidth < 768;
 
 export function getScene() { return scene; }
 export function getCamera() { return camera; }
@@ -30,14 +34,21 @@ export function initScene(canvas) {
   // Renderer
   renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: !isMobile,
     alpha: false
   });
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  if (isMobile) {
+    renderer.shadowMap.enabled = false;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  } else {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  }
 
   // Lights
   setupLights();
@@ -45,8 +56,12 @@ export function initScene(canvas) {
   // Environment map (procedural)
   setupEnvironment();
 
-  // Post-processing
-  setupPostProcessing();
+  // Post-processing (skip on mobile — bloom can cause black screen)
+  if (!isMobile) {
+    setupPostProcessing();
+  } else {
+    useComposer = false;
+  }
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
@@ -67,22 +82,25 @@ export function initScene(canvas) {
 
 function setupLights() {
   // Ambient
-  const ambient = new THREE.AmbientLight(0x404050, 0.4);
+  const ambient = new THREE.AmbientLight(0x404050, isMobile ? 0.8 : 0.4);
   scene.add(ambient);
 
   // Key light (directional with shadows)
   const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
   keyLight.position.set(5, 8, 3);
-  keyLight.castShadow = true;
-  keyLight.shadow.bias = -0.001;
-  keyLight.shadow.mapSize.width = 1024;
-  keyLight.shadow.mapSize.height = 1024;
-  keyLight.shadow.camera.near = 0.5;
-  keyLight.shadow.camera.far = 20;
-  keyLight.shadow.camera.left = -5;
-  keyLight.shadow.camera.right = 5;
-  keyLight.shadow.camera.top = 5;
-  keyLight.shadow.camera.bottom = -5;
+
+  if (!isMobile) {
+    keyLight.castShadow = true;
+    keyLight.shadow.bias = -0.001;
+    keyLight.shadow.mapSize.width = 1024;
+    keyLight.shadow.mapSize.height = 1024;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 20;
+    keyLight.shadow.camera.left = -5;
+    keyLight.shadow.camera.right = 5;
+    keyLight.shadow.camera.top = 5;
+    keyLight.shadow.camera.bottom = -5;
+  }
   scene.add(keyLight);
 
   // Rim light (orange, behind/left — hints at high-heat environment)
@@ -167,11 +185,12 @@ function handleResize() {
   const w = container.clientWidth;
   const h = container.clientHeight;
 
+  if (w === 0 || h === 0) return;
+
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 
   renderer.setSize(w, h);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   if (composer) {
     composer.setSize(w, h);
@@ -188,7 +207,11 @@ export function animate(callback) {
 
     if (callback) callback(delta, elapsed);
 
-    composer.render();
+    if (useComposer && composer) {
+      composer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
   }
   loop();
 }
