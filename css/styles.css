@@ -1,0 +1,402 @@
+/* ============================================
+   Eridian Translator — Styles
+   ============================================ */
+
+:root {
+  --bg-void: #050508;
+  --bg-panel: rgba(255, 255, 255, 0.03);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+  --amber: #f59e0b;
+  --amber-glow: rgba(245, 158, 11, 0.4);
+  --amber-dark: #d97706;
+  --blue-fill: #88bbff;
+  --font-mono: 'Fira Code', monospace;
+  --font-display: 'Syncopate', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --glass-blur: 12px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --panel-width: 40%;
+  --canvas-width: 60%;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: radial-gradient(circle at 70% 50%, #1a1a24 0%, #050508 100%);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- App Layout ---- */
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ---- UI Panel (Left) ---- */
+#ui-panel {
+  width: var(--panel-width);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1.5rem;
+  z-index: 10;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+#ui-panel::-webkit-scrollbar {
+  width: 4px;
+}
+#ui-panel::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
+
+/* ---- Canvas Container (Right) ---- */
+#canvas-container {
+  width: var(--canvas-width);
+  height: 100vh;
+  position: relative;
+}
+
+#three-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Loading Overlay ---- */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 5, 8, 0.9);
+  z-index: 20;
+  transition: opacity 0.8s ease;
+}
+
+.loading-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--border-glass);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Panel Header ---- */
+.panel-header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--amber);
+  letter-spacing: 0.08em;
+}
+
+/* ---- Glass Card ---- */
+.glass-card {
+  background: var(--bg-panel);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  box-shadow: var(--glass-shadow);
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ---- Input ---- */
+.input-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+.input-group {
+  position: relative;
+}
+
+.input-group textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.8rem 2.5rem 0.8rem 0.8rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.input-group textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.input-group textarea:focus {
+  border-color: var(--amber);
+}
+
+/* ---- Mic Button ---- */
+.icon-btn {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.icon-btn.recording {
+  color: #ef4444;
+  border-color: #ef4444;
+  animation: pulse-recording 1.5s ease infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+/* ---- Translate Button ---- */
+.translate-btn {
+  position: relative;
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  border: none;
+  border-radius: 8px;
+  color: #0a0e1a;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.translate-btn:hover {
+  box-shadow: 0 0 24px var(--amber-glow), 0 0 48px rgba(245, 158, 11, 0.2);
+  transform: translateY(-1px);
+}
+
+.translate-btn:active {
+  transform: translateY(0);
+}
+
+.translate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, transparent 0%, rgba(245, 158, 11, 0.3) 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.translate-btn:hover .btn-glow {
+  opacity: 1;
+}
+
+/* ---- Visualizer ---- */
+.output-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 120px;
+}
+
+.visualizer-container {
+  flex: 1;
+  position: relative;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 100px;
+}
+
+.visualizer-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.status-text {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+/* ---- Character Display ---- */
+.char-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 24px;
+}
+
+.char-display .char {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  transition: all 0.2s;
+}
+
+.char-display .char.active {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: rgba(245, 158, 11, 0.1);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.char-display .char.played {
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.char-display .char.space {
+  background: transparent;
+  border-color: transparent;
+  width: 12px;
+}
+
+/* ---- Footer ---- */
+.panel-footer {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.footer-text {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+/* ---- Mobile Layout ---- */
+@media (max-width: 768px) {
+  #app {
+    flex-direction: column-reverse;
+  }
+
+  #canvas-container {
+    width: 100%;
+    height: 50vh;
+  }
+
+  #ui-panel {
+    width: 100%;
+    height: 50vh;
+    padding: 1rem;
+    border-top: 1px solid var(--border-glass);
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .subtitle {
+    font-size: 0.65rem;
+  }
+}
+
+/* ---- Reduced Motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
