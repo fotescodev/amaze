@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eridian Translator — Project Hail Mary</title>
+  <meta name="description" content="Translate human language into Eridian musical chords. A cinematic experience inspired by Project Hail Mary.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/styles.css">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- Left Panel: Translator UI -->
+    <aside id="ui-panel">
+      <header class="panel-header">
+        <h1 class="title">Eridian Translator</h1>
+        <p class="subtitle">Project Hail Mary — In Theaters March 20, 2026</p>
+      </header>
+
+      <div class="glass-card translator-card">
+        <label for="input-text" class="input-label">Human Input</label>
+        <div class="input-group">
+          <textarea id="input-text" rows="4" placeholder="Type a message to translate into Eridian..."></textarea>
+          <button id="mic-btn" class="icon-btn" title="Use microphone" aria-label="Use microphone">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+        </div>
+
+        <button id="translate-btn" class="translate-btn">
+          <span class="btn-text">Translate</span>
+          <span class="btn-glow"></span>
+        </button>
+
+        <div class="output-section">
+          <label class="input-label">Eridian Output</label>
+          <div class="visualizer-container">
+            <canvas id="visualizer-canvas"></canvas>
+            <p id="status-text" class="status-text">Awaiting input...</p>
+          </div>
+        </div>
+
+        <div id="char-display" class="char-display"></div>
+      </div>
+
+      <footer class="panel-footer">
+        <p class="footer-text">♫ Each letter becomes a musical chord ♫</p>
+      </footer>
+    </aside>
+
+    <!-- Right Panel: Three.js Canvas -->
+    <main id="canvas-container">
+      <canvas id="three-canvas"></canvas>
+      <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Initializing Xenonite Chamber...</p>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
