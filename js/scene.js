@@ -99,13 +99,7 @@ function setupLights() {
 function setupEnvironment() {
   // Procedural environment cube texture for reflections
   const size = 128;
-  const canvas2d = document.createElement('canvas');
-  canvas2d.width = size;
-  canvas2d.height = size;
-  const ctx = canvas2d.getContext('2d');
 
-  // Generate 6 gradient faces for a simple studio-like env
-  const faces = [];
   const colors = [
     ['#1a1a24', '#0a0a12'], // px
     ['#141420', '#080810'], // nx
@@ -115,7 +109,15 @@ function setupEnvironment() {
     ['#141420', '#080810'], // nz
   ];
 
+  const images = [];
+
   for (const [c1, c2] of colors) {
+    // Each face needs its own canvas
+    const faceCanvas = document.createElement('canvas');
+    faceCanvas.width = size;
+    faceCanvas.height = size;
+    const ctx = faceCanvas.getContext('2d');
+
     const grad = ctx.createLinearGradient(0, 0, 0, size);
     grad.addColorStop(0, c1);
     grad.addColorStop(1, c2);
@@ -131,11 +133,10 @@ function setupEnvironment() {
       ctx.fillRect(x, y, 1, 1);
     }
 
-    const tex = new THREE.CanvasTexture(canvas2d);
-    faces.push(tex);
+    images.push(faceCanvas);
   }
 
-  const cubeTexture = new THREE.CubeTexture(faces.map(t => t.image));
+  const cubeTexture = new THREE.CubeTexture(images);
   cubeTexture.needsUpdate = true;
   scene.environment = cubeTexture;
 }

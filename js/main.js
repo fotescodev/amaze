@@ -16,44 +16,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const vizCanvas = document.getElementById('visualizer-canvas');
   const loadingOverlay = document.getElementById('loading-overlay');
 
-  // Initialize Three.js scene
-  const { scene } = initScene(threeCanvas);
+  try {
+    // Initialize Three.js scene
+    const { scene } = initScene(threeCanvas);
 
-  // Create 3D objects
-  createCage(scene);
-  createRocky(scene);
+    // Create 3D objects
+    createCage(scene);
+    createRocky(scene);
 
-  // Initialize audio (lazy — context created on first user gesture)
-  // Pre-create analyser for visualizer binding
-  getAudioContext();
-  const analyser = getAnalyser();
+    // Initialize audio (lazy — context created on first user gesture)
+    getAudioContext();
+    const analyser = getAnalyser();
 
-  // Initialize visualizer
-  initVisualizer(vizCanvas, analyser);
+    // Initialize visualizer
+    initVisualizer(vizCanvas, analyser);
 
-  // Initialize UI handlers
-  initUI();
+    // Initialize UI handlers
+    initUI();
 
-  // Hide loading overlay
-  setTimeout(() => {
+    // Hide loading overlay
+    setTimeout(() => {
+      loadingOverlay.classList.add('hidden');
+    }, 800);
+
+    // Start render loop
+    const rimLight = getRimLight();
+
+    animate((delta, elapsed) => {
+      animateCage(elapsed);
+      animateRocky(elapsed, delta);
+
+      if (rimLight) {
+        rimLight.intensity = 2.0 + Math.sin(elapsed * 3) * 0.2 + Math.sin(elapsed * 7.3) * 0.1;
+      }
+    });
+
+    console.log('Eridian Translator initialized.');
+  } catch (err) {
+    console.error('Initialization error:', err);
+    // Still hide overlay and show UI even if 3D fails
     loadingOverlay.classList.add('hidden');
-  }, 800);
-
-  // Start render loop
-  const rimLight = getRimLight();
-
-  animate((delta, elapsed) => {
-    // Animate cage rotation
-    animateCage(elapsed);
-
-    // Animate Rocky (breathing, idle, translation reaction)
-    animateRocky(elapsed, delta);
-
-    // Subtle rim light flicker (heat shimmer effect)
-    if (rimLight) {
-      rimLight.intensity = 2.0 + Math.sin(elapsed * 3) * 0.2 + Math.sin(elapsed * 7.3) * 0.1;
-    }
-  });
-
-  console.log('Eridian Translator initialized.');
+  }
 });
