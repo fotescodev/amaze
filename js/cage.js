@@ -81,14 +81,23 @@ function addTubeStruts(icoGeo, radius, detail) {
   const edgeSet = new Set();
   const edges = [];
 
-  for (let i = 0; i < index.count; i += 3) {
-    const a = index.getX(i);
-    const b = index.getX(i + 1);
-    const c = index.getX(i + 2);
-
-    addEdge(a, b);
-    addEdge(b, c);
-    addEdge(c, a);
+  if (index) {
+    for (let i = 0; i < index.count; i += 3) {
+      const a = index.getX(i);
+      const b = index.getX(i + 1);
+      const c = index.getX(i + 2);
+      addEdge(a, b);
+      addEdge(b, c);
+      addEdge(c, a);
+    }
+  } else {
+    // Non-indexed geometry: every 3 consecutive vertices form a triangle
+    const count = positions.count;
+    for (let i = 0; i < count; i += 3) {
+      addEdge(i, i + 1);
+      addEdge(i + 1, i + 2);
+      addEdge(i + 2, i);
+    }
   }
 
   function addEdge(i1, i2) {
