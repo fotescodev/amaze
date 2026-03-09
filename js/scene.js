@@ -73,9 +73,13 @@ export function initScene(canvas) {
   controls.minPolarAngle = Math.PI * 0.2;
   controls.enablePan = false;
 
-  // Handle resize
+  // Handle resize — call immediately and again after layout settles
   handleResize();
   window.addEventListener('resize', handleResize);
+  // Mobile layouts can shift after DOMContentLoaded; retry resize
+  requestAnimationFrame(handleResize);
+  setTimeout(handleResize, 100);
+  setTimeout(handleResize, 500);
 
   return { scene, camera, renderer };
 }
