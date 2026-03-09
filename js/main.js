@@ -9,6 +9,7 @@ import { createRocky, animateRocky } from './rocky.js';
 import { getAnalyser, getAudioContext } from './audio-engine.js';
 import { initVisualizer } from './visualizer.js';
 import { initUI } from './ui.js';
+import { initLexiconExplorer } from './lexicon-explorer.js';
 
 // Wait for DOM
 document.addEventListener('DOMContentLoaded', () => {
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize UI handlers
     initUI();
+    initLexiconExplorer();
 
     // Hide loading overlay
     setTimeout(() => {

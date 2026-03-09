@@ -392,6 +392,252 @@ html, body {
   opacity: 0.5;
 }
 
+/* ---- Lexicon Explorer ---- */
+.lexicon-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.lexicon-toggle:hover {
+  color: var(--amber);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.lexicon-toggle.active {
+  color: var(--amber);
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.05);
+}
+.lexicon-count {
+  margin-left: auto;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+.lexicon-chevron {
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.lexicon-panel {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-glass);
+  border-radius: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.lexicon-panel.hidden {
+  display: none;
+}
+
+/* Cluster tabs */
+.lexicon-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+}
+.lexicon-tab {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 500;
+  border: 1px solid rgba(55, 65, 81, 0.5);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.lexicon-tab:hover {
+  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--amber);
+}
+.lexicon-tab.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--amber);
+  font-weight: 600;
+}
+
+/* Card grid */
+.lexicon-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+}
+
+/* Chord card */
+.chord-card {
+  padding: 10px 12px;
+  background: rgba(17, 24, 39, 0.5);
+  border: 1px solid rgba(55, 65, 81, 0.5);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chord-card:hover {
+  border-color: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.1);
+}
+.chord-card.expanded {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(17, 24, 39, 0.9);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+.chord-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chord-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chord-glyph {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--amber);
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+  min-width: 40px;
+}
+.chord-info {
+  display: flex;
+  flex-direction: column;
+}
+.chord-word {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.chord-tones {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+.chord-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Fidelity tags */
+.fidelity-tag {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.fidelity-canon {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+.fidelity-audiobook-derived {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+.fidelity-fan-extended {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.fidelity-ai-extended {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--amber);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* Play button */
+.chord-play-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  background: transparent;
+  color: var(--amber);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chord-play-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.chord-play-btn.playing {
+  background: var(--amber);
+  color: #0a0e1a;
+  border-color: transparent;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Expanded details */
+.chord-card-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(55, 65, 81, 0.3);
+}
+.chord-card-details.hidden {
+  display: none;
+}
+.chord-card-details dl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-row {
+  display: flex;
+  gap: 6px;
+  font-size: 0.7rem;
+}
+.detail-row dt {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.detail-row dd {
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+/* Disclaimer */
+.lexicon-disclaimer {
+  margin-top: 0.75rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(6, 10, 18, 0.6);
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
 /* ---- Footer ---- */
 .panel-footer {
   margin-top: 1rem;
