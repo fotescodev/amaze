@@ -1,14 +1,17 @@
 /**
  * UI Controller
- * Handles DOM events, input, microphone, character display, and mobile layout.
+ * Handles DOM events, input, microphone, word-level character display,
+ * emotion-driven Rocky states, and mobile layout.
  */
 
-import { ensureAudioReady, translateText, getAnalyser, getDictionary } from './audio-engine.js';
+import { ensureAudioReady, translateText, getAnalyser } from './audio-engine.js';
+import { LEXICON_MAP } from './lexicon.js';
 import { setTranslating } from './rocky.js';
 import { startVisualization, stopVisualization } from './visualizer.js';
 
 let translateBtn, inputText, micBtn, statusText, charDisplay;
 let isPlaying = false;
+let cancelFn = null;
 let recognition = null;
 
 export function initUI() {
@@ -40,6 +43,12 @@ async function handleTranslate() {
   const text = inputText.value.trim();
   if (!text || isPlaying) return;
 
+  // Cancel any previous playback
+  if (cancelFn) {
+    cancelFn();
+    cancelFn = null;
+  }
+
   isPlaying = true;
   translateBtn.disabled = true;
   translateBtn.querySelector('.btn-text').textContent = 'Translating...';
@@ -47,42 +56,51 @@ async function handleTranslate() {
   try {
     await ensureAudioReady();
 
-    // Build character display
-    buildCharDisplay(text);
+    // Translate using full lexicon engine
+    const result = translateText(text);
+    const { totalDuration, wordTimings, resolvedWords, emotion, startTime, cancel } = result;
+    cancelFn = cancel;
 
-    // Start translation
-    const { totalDuration, charTimings, startTime } = translateText(text);
+    // Build word-level display
+    buildWordDisplay(wordTimings);
 
-    // Start visualizer and Rocky animation
+    // Start visualizer and Rocky animation with emotion intensity
     startVisualization();
-    setTranslating(true, 1.0);
+    const intensity = emotion.intensity === 'emphatic' ? 1.5 : 1.0;
+    setTranslating(true, intensity);
 
-    statusText.textContent = `Translating ${text.length} characters...`;
+    // Count known vs fallback words
+    const knownCount = resolvedWords.filter(r => r && r.type === 'lexicon').length;
+    const totalWords = wordTimings.length;
+    statusText.textContent = `Translating ${totalWords} words (${knownCount} in lexicon)...`;
 
-    // Animate character highlights in sync with audio
-    const analyser = getAnalyser();
-    animateCharHighlights(charTimings, startTime);
+    // Animate word highlights in sync with audio
+    animateWordHighlights(wordTimings, startTime);
 
     // Wait for playback to complete
     setTimeout(() => {
       isPlaying = false;
+      cancelFn = null;
       translateBtn.disabled = false;
       translateBtn.querySelector('.btn-text').textContent = 'Translate';
       setTranslating(false);
       stopVisualization();
-      statusText.textContent = `Translation complete — ${text.length} chords played`;
 
-      // Mark all chars as played
-      const chars = charDisplay.querySelectorAll('.char');
-      chars.forEach(c => {
-        c.classList.remove('active');
-        c.classList.add('played');
+      const emotionLabel = emotion.state !== 'neutral' ? ` — ${emotion.state}` : '';
+      statusText.textContent = `Translation complete — ${totalWords} chords played${emotionLabel}`;
+
+      // Mark all words as played
+      const words = charDisplay.querySelectorAll('.word-chip');
+      words.forEach(w => {
+        w.classList.remove('active');
+        w.classList.add('played');
       });
     }, totalDuration * 1000 + 100);
 
   } catch (err) {
     console.error('Translation error:', err);
     isPlaying = false;
+    cancelFn = null;
     translateBtn.disabled = false;
     translateBtn.querySelector('.btn-text').textContent = 'Translate';
     setTranslating(false);
@@ -90,43 +108,66 @@ async function handleTranslate() {
   }
 }
 
-function buildCharDisplay(text) {
+/**
+ * Build word-level display showing each word with its glyph and source.
+ */
+function buildWordDisplay(wordTimings) {
   charDisplay.innerHTML = '';
-  const lowerText = text.toLowerCase();
 
-  for (let i = 0; i < lowerText.length; i++) {
-    const span = document.createElement('span');
-    const char = lowerText[i];
+  for (let i = 0; i < wordTimings.length; i++) {
+    const { word, resolved } = wordTimings[i];
+    if (!word) continue;
 
-    if (char === ' ') {
-      span.className = 'char space';
+    const chip = document.createElement('div');
+    chip.className = 'word-chip';
+    chip.dataset.index = i;
+
+    const wordLabel = document.createElement('span');
+    wordLabel.className = 'word-label';
+    wordLabel.textContent = word;
+
+    const glyphLabel = document.createElement('span');
+    glyphLabel.className = 'word-glyph';
+
+    if (resolved) {
+      const isLexicon = resolved.type === 'lexicon';
+      glyphLabel.textContent = resolved.glyph || '';
+      chip.classList.add(isLexicon ? 'lexicon-word' : 'fallback-word');
+      if (resolved.entry) {
+        chip.title = resolved.gloss || '';
+      }
     } else {
-      span.className = 'char';
-      span.textContent = char;
+      glyphLabel.textContent = '?';
+      chip.classList.add('unknown-word');
     }
-    span.dataset.index = i;
-    charDisplay.appendChild(span);
+
+    chip.appendChild(wordLabel);
+    chip.appendChild(glyphLabel);
+    charDisplay.appendChild(chip);
   }
 }
 
-function animateCharHighlights(charTimings, audioStartTime) {
-  const chars = charDisplay.querySelectorAll('.char');
-  const analyser = getAnalyser();
+/**
+ * Animate word highlights in sync with audio playback.
+ */
+function animateWordHighlights(wordTimings, audioStartTime) {
+  const chips = charDisplay.querySelectorAll('.word-chip');
 
-  for (let i = 0; i < charTimings.length; i++) {
-    const { time, isChord } = charTimings[i];
+  for (let i = 0; i < wordTimings.length; i++) {
+    const { time, duration } = wordTimings[i];
     const delay = (time - audioStartTime) * 1000;
 
+    // Highlight on start
     setTimeout(() => {
-      // Remove active from previous
+      // Deactivate previous
       if (i > 0) {
-        chars[i - 1]?.classList.remove('active');
-        chars[i - 1]?.classList.add('played');
+        chips[i - 1]?.classList.remove('active');
+        chips[i - 1]?.classList.add('played');
       }
-      // Highlight current
-      if (chars[i]) {
-        chars[i].classList.add('active');
-        chars[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      // Activate current
+      if (chips[i]) {
+        chips[i].classList.add('active');
+        chips[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }, Math.max(0, delay));
   }

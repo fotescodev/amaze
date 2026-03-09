@@ -1,10 +1,34 @@
 /**
- * Eridian Translation Engine (Web Audio API)
- * Translates English text characters into polyphonic musical chords.
+ * Eridian Chord Audio Engine
+ *
+ * Renders Eridian speech as simultaneous sine-wave chords via Web Audio API.
+ * Supports the full lexicon with multi-syllable words, word-level playback,
+ * emotion detection, cancellation, and character-level fallback.
+ *
+ * Design (from PRD §6.2):
+ *   - 1–5 OscillatorNodes per chord, all type: "sine"
+ *   - ADSR envelope: Attack 40ms, Decay 80ms, Sustain 70%, Release 200ms
+ *   - Per-oscillator gain normalized by chord density
+ *   - 80ms gap between syllables, 150ms gap between words
+ *   - AudioContext created on first user interaction (autoplay policy)
  */
 
-// Exact frequency mapping: English letter → base Hz
-const eridianDictionary = {
+import { LEXICON_MAP, QUESTION_PARTICLE } from './lexicon.js';
+
+// ADSR timing constants (seconds)
+const ATTACK = 0.04;
+const DECAY = 0.08;
+const SUSTAIN_LEVEL = 0.7;
+const SUSTAIN_DURATION = 0.25;
+const RELEASE = 0.2;
+
+const CHORD_DURATION = ATTACK + DECAY + SUSTAIN_DURATION + RELEASE; // ~0.57s
+const SYLLABLE_GAP = 0.08;  // 80ms between syllables of a multi-syllable word
+const WORD_GAP = 0.15;      // 150ms between words
+const MASTER_GAIN = 0.35;
+
+// Fallback: single-character frequency mapping for unknown words
+const CHAR_FREQUENCIES = {
   "a": 261.63, "b": 277.18, "c": 293.66, "d": 311.13,
   "e": 329.63, "f": 349.23, "g": 369.99, "h": 392.00,
   "i": 415.30, "j": 440.00, "k": 466.16, "l": 493.88,
@@ -13,18 +37,6 @@ const eridianDictionary = {
   "u": 830.61, "v": 880.00, "w": 932.33, "x": 987.77,
   "y": 1046.50, "z": 1108.73
 };
-
-// ADSR timing constants (seconds)
-const ATTACK = 0.04;
-const DECAY = 0.06;
-const SUSTAIN_LEVEL = 0.6;
-const SUSTAIN_DURATION = 0.08;
-const RELEASE = 0.12;
-const CHORD_DURATION = ATTACK + DECAY + SUSTAIN_DURATION + RELEASE; // ~0.30s
-
-const SPACE_DELAY = 0.2;       // 200ms pause for spaces
-const PUNCTUATION_DELAY = 0.4; // 400ms pause for punctuation
-const MASTER_GAIN = 0.25;
 
 let audioContext = null;
 let analyserNode = null;
@@ -66,25 +78,28 @@ export async function ensureAudioReady() {
  * Get the shared AnalyserNode for visualization.
  */
 export function getAnalyser() {
-  getAudioContext(); // ensure created
+  getAudioContext();
   return analyserNode;
 }
 
 /**
- * Play a single Eridian chord for one character.
- * Spawns 3 OscillatorNodes: Root, Root * 1.25, Root * 1.5 (triad).
+ * Schedule a single chord (one syllable) with ADSR envelope.
+ * Returns the end time and oscillator references.
  */
-function playEridianChord(baseFreq, ctx, startTime) {
-  const triad = [baseFreq, baseFreq * 1.25, baseFreq * 1.5];
-  const perOscGain = MASTER_GAIN / Math.sqrt(triad.length);
+function scheduleChord(ctx, tones, startTime, octaveShift = false) {
+  const count = tones.length;
+  const perOscGain = MASTER_GAIN / Math.sqrt(count);
+  const oscillators = [];
 
-  for (const freq of triad) {
+  for (const baseHz of tones) {
+    const hz = octaveShift ? baseHz * 2 : baseHz;
+
     const osc = ctx.createOscillator();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, startTime);
+    osc.frequency.setValueAtTime(hz, startTime);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, startTime); // small initial value to avoid log issues
+    gain.gain.setValueAtTime(0.0001, startTime);
 
     // Attack
     gain.gain.linearRampToValueAtTime(perOscGain, startTime + ATTACK);
@@ -105,54 +120,218 @@ function playEridianChord(baseFreq, ctx, startTime) {
     gain.connect(masterGain);
 
     osc.start(startTime);
-    osc.stop(startTime + CHORD_DURATION + 0.02);
+    osc.stop(startTime + CHORD_DURATION + 0.01);
+    oscillators.push(osc);
   }
+
+  return { endTime: startTime + CHORD_DURATION, oscillators };
 }
 
 /**
- * Translate and play an entire text string as Eridian chords.
- * Returns { totalDuration, charTimings[], cancel() }.
+ * Tokenize input text into words, handling punctuation.
+ * Returns array of { word, isQuestion, isPunctuation }.
  */
-export function translateText(text) {
-  const ctx = getAudioContext();
-  const chars = text.toLowerCase().split('');
-  let offset = ctx.currentTime + 0.05;
+function tokenize(text) {
+  const tokens = [];
+  // Split on whitespace, keeping punctuation attached
+  const raw = text.trim().toLowerCase().split(/\s+/);
 
-  const charTimings = []; // { char, time, isChord }
+  for (const token of raw) {
+    if (!token) continue;
 
-  for (const char of chars) {
-    const freq = eridianDictionary[char];
-
-    if (freq) {
-      // Mapped character → play chord
-      playEridianChord(freq, ctx, offset);
-      charTimings.push({ char, time: offset, isChord: true });
-      offset += CHORD_DURATION + 0.02; // small gap between chords
-    } else if (char === ' ') {
-      // Space → short silence
-      charTimings.push({ char: ' ', time: offset, isChord: false });
-      offset += SPACE_DELAY;
+    // Strip trailing punctuation
+    const match = token.match(/^([a-z'-]+)([^a-z]*)$/);
+    if (match) {
+      tokens.push({ word: match[1], punctuation: match[2] || '' });
     } else {
-      // Punctuation or unmapped → longer silence
-      charTimings.push({ char, time: offset, isChord: false });
-      offset += PUNCTUATION_DELAY;
+      // Pure punctuation or symbols
+      tokens.push({ word: '', punctuation: token });
+    }
+  }
+  return tokens;
+}
+
+/**
+ * Resolve a word to its playable chord data.
+ * Uses lexicon for known words, falls back to character-level synthesis.
+ */
+function resolveWord(word) {
+  // Check lexicon first
+  const entry = LEXICON_MAP.get(word);
+  if (entry) {
+    return {
+      type: 'lexicon',
+      entry,
+      syllables: entry.syllables,
+      intervalType: entry.intervalType,
+      glyph: entry.glyph,
+      gloss: entry.gloss,
+    };
+  }
+
+  // Fallback: synthesize per-character chords
+  const syllables = [];
+  for (const char of word) {
+    const freq = CHAR_FREQUENCIES[char];
+    if (freq) {
+      // Create a simple triad for each character
+      syllables.push({ tones: [freq, freq * 1.25, freq * 1.5] });
     }
   }
 
-  const totalDuration = offset - ctx.currentTime;
+  if (syllables.length === 0) return null;
 
   return {
-    totalDuration,
-    charTimings,
-    startTime: ctx.currentTime
+    type: 'fallback',
+    entry: null,
+    syllables,
+    intervalType: 'open',
+    glyph: '◉'.repeat(Math.min(syllables.length, 5)),
+    gloss: `Character-level synthesis for "${word}"`,
   };
 }
 
 /**
- * Get the character-to-frequency dictionary (for UI display).
+ * Detect emotion from resolved chord data.
+ * Algorithm: count interval types, plurality wins.
+ * consonant → joyful, dissonant → distressed, open → neutral
+ * Tripled words → emphatic intensity.
  */
-export function getDictionary() {
-  return { ...eridianDictionary };
+export function detectEmotion(resolvedWords) {
+  let consonant = 0, dissonant = 0, open = 0;
+
+  for (const rw of resolvedWords) {
+    if (!rw) continue;
+    switch (rw.intervalType) {
+      case 'consonant': consonant++; break;
+      case 'dissonant': dissonant++; break;
+      case 'open': open++; break;
+    }
+  }
+
+  let state = 'neutral';
+  if (consonant >= dissonant && consonant >= open && consonant > 0) {
+    state = 'joyful';
+  } else if (dissonant > consonant && dissonant > open) {
+    state = 'distressed';
+  }
+
+  return { state, intensity: 'normal' };
 }
 
-export { CHORD_DURATION };
+/**
+ * Translate and play an entire text string as Eridian chords.
+ * Uses lexicon for known words, character fallback for unknowns.
+ *
+ * Returns { totalDuration, wordTimings[], resolvedWords[], emotion, cancel() }.
+ */
+export function translateText(text) {
+  const ctx = getAudioContext();
+  const tokens = tokenize(text);
+  const isQuestion = text.trim().endsWith('?');
+
+  let offset = ctx.currentTime + 0.05;
+  const wordTimings = [];
+  const resolvedWords = [];
+  const allOscillators = [];
+
+  for (let i = 0; i < tokens.length; i++) {
+    const { word, punctuation } = tokens[i];
+
+    if (!word) {
+      // Pure punctuation — add a pause
+      offset += 0.3;
+      continue;
+    }
+
+    const resolved = resolveWord(word);
+    resolvedWords.push(resolved);
+
+    if (!resolved) {
+      // Unresolvable word — skip with short pause
+      wordTimings.push({ word, time: offset, duration: 0.1, resolved: null });
+      offset += 0.15;
+      continue;
+    }
+
+    const wordStart = offset;
+
+    // Play each syllable
+    for (let s = 0; s < resolved.syllables.length; s++) {
+      const { endTime, oscillators } = scheduleChord(
+        ctx, resolved.syllables[s].tones, offset
+      );
+      allOscillators.push(...oscillators);
+      offset = endTime;
+
+      // Gap between syllables (not after last)
+      if (s < resolved.syllables.length - 1) {
+        offset += SYLLABLE_GAP;
+      }
+    }
+
+    const wordDuration = offset - wordStart;
+    wordTimings.push({ word, time: wordStart, duration: wordDuration, resolved });
+
+    // Punctuation pauses
+    if (punctuation.includes('.') || punctuation.includes('!')) {
+      offset += 0.3;
+    } else if (punctuation.includes(',') || punctuation.includes(';')) {
+      offset += 0.2;
+    }
+
+    // Word gap (not after last)
+    if (i < tokens.length - 1) {
+      offset += WORD_GAP;
+    }
+  }
+
+  // Append question particle if applicable
+  if (isQuestion) {
+    offset += SYLLABLE_GAP;
+    const { endTime, oscillators } = scheduleChord(
+      ctx, QUESTION_PARTICLE.syllables[0].tones, offset
+    );
+    allOscillators.push(...oscillators);
+    wordTimings.push({
+      word: '?',
+      time: offset,
+      duration: endTime - offset,
+      resolved: { type: 'lexicon', entry: QUESTION_PARTICLE, intervalType: 'consonant' }
+    });
+    offset = endTime;
+  }
+
+  const totalDuration = offset - ctx.currentTime;
+  const emotion = detectEmotion(resolvedWords);
+
+  // Check for tripled words → emphatic
+  const TRIPLED_RE = /\b(\w+)\s+\1\s+\1\b/i;
+  if (TRIPLED_RE.test(text)) {
+    emotion.intensity = 'emphatic';
+  }
+
+  // Check for question → curious
+  if (isQuestion) {
+    emotion.state = 'curious';
+  }
+
+  // Cancel function — gracefully fade out all oscillators
+  const cancel = () => {
+    const stopTime = ctx.currentTime + RELEASE;
+    for (const osc of allOscillators) {
+      try { osc.stop(stopTime); } catch { /* already stopped */ }
+    }
+  };
+
+  return {
+    totalDuration,
+    wordTimings,
+    resolvedWords,
+    emotion,
+    startTime: ctx.currentTime,
+    cancel,
+  };
+}
+
+export { CHORD_DURATION, WORD_GAP, LEXICON_MAP };

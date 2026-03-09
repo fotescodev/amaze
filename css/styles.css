@@ -311,46 +311,85 @@ html, body {
   letter-spacing: 0.05em;
 }
 
-/* ---- Character Display ---- */
+/* ---- Word Display ---- */
 .char-display {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   min-height: 24px;
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 
-.char-display .char {
+.word-chip {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
+  padding: 4px 8px;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  border-radius: 4px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-subtle);
-  color: var(--text-dim);
-  transition: all 0.2s;
+  transition: all 0.25s ease;
+  cursor: default;
 }
 
-.char-display .char.active {
+.word-chip .word-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  line-height: 1.2;
+}
+
+.word-chip .word-glyph {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  opacity: 0.6;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* Lexicon word — has a subtle teal indicator */
+.word-chip.lexicon-word {
+  border-color: rgba(0, 255, 136, 0.15);
+}
+.word-chip.lexicon-word .word-glyph {
+  color: rgba(0, 255, 136, 0.5);
+}
+
+/* Fallback word — neutral */
+.word-chip.fallback-word {
+  border-color: var(--border-subtle);
+}
+
+/* Active (currently playing) */
+.word-chip.active {
   color: var(--amber);
   border-color: var(--amber);
-  background: rgba(245, 158, 11, 0.1);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+  transform: translateY(-1px);
+}
+.word-chip.active .word-label {
+  color: var(--amber);
+}
+.word-chip.active .word-glyph {
+  color: var(--amber);
+  opacity: 1;
 }
 
-.char-display .char.played {
+/* Played */
+.word-chip.played {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+.word-chip.played .word-label {
   color: var(--text-secondary);
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.05);
 }
-
-.char-display .char.space {
-  background: transparent;
-  border-color: transparent;
-  width: 12px;
+.word-chip.played .word-glyph {
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 
 /* ---- Footer ---- */
