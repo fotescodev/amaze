@@ -169,25 +169,30 @@ function resolveWord(word) {
     };
   }
 
-  // Fallback: synthesize per-character chords
-  const syllables = [];
+  // Fallback: blend unique character frequencies into a single chord (max 5 voices)
+  const freqs = [];
+  const seen = new Set();
   for (const char of word) {
     const freq = CHAR_FREQUENCIES[char];
-    if (freq) {
-      // Create a simple triad for each character
-      syllables.push({ tones: [freq, freq * 1.25, freq * 1.5] });
+    if (freq && !seen.has(freq)) {
+      seen.add(freq);
+      freqs.push(freq);
     }
   }
 
-  if (syllables.length === 0) return null;
+  if (freqs.length === 0) return null;
+
+  // Sort and cap at 5 voices (Eridian constraint)
+  freqs.sort((a, b) => a - b);
+  const tones = freqs.slice(0, 5);
 
   return {
     type: 'fallback',
     entry: null,
-    syllables,
+    syllables: [{ tones }],
     intervalType: 'open',
-    glyph: '◉'.repeat(Math.min(syllables.length, 5)),
-    gloss: `Character-level synthesis for "${word}"`,
+    glyph: '◉'.repeat(tones.length),
+    gloss: `Synthesized ${tones.length}-tone chord for "${word}"`,
   };
 }
 
