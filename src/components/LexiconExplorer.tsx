@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useId } from "react";
+import { useState, useId, useRef, useCallback, type KeyboardEvent } from "react";
 import { LEXICON_CLUSTERS, type ClusterName } from "@/data/lexicon";
 import ChordCard from "./ChordCard";
 
@@ -9,8 +9,39 @@ export default function LexiconExplorer() {
   const [activeCluster, setActiveCluster] = useState<ClusterName>(clusters[0]);
   const tabId = useId();
   const panelId = useId();
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const totalWords = Object.values(LEXICON_CLUSTERS).flat().length;
+  const focusTab = useCallback((nextIndex: number) => {
+    const cluster = clusters[nextIndex];
+    if (!cluster) return;
+
+    setActiveCluster(cluster);
+    tabRefs.current[nextIndex]?.focus();
+  }, [clusters]);
+
+  const handleTabKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault();
+        focusTab((index + 1) % clusters.length);
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault();
+        focusTab((index - 1 + clusters.length) % clusters.length);
+        break;
+      case "Home":
+        event.preventDefault();
+        focusTab(0);
+        break;
+      case "End":
+        event.preventDefault();
+        focusTab(clusters.length - 1);
+        break;
+    }
+  }, [clusters.length, focusTab]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,7 +79,12 @@ export default function LexiconExplorer() {
               id={`${tabId}-${index}`}
               aria-selected={isActive}
               aria-controls={panelId}
+              tabIndex={isActive ? 0 : -1}
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
               onClick={() => setActiveCluster(name)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
               className={[
                 "rounded-full px-3.5 py-2 text-xs font-medium",
                 "min-h-[44px]",
