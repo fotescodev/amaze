@@ -55,7 +55,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
     prevMessageCountRef.current = messages.length;
   }, [messages]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = (text: string) => {
     if (!text.trim() || isLoading) return;
 
     const userMessage: ChatMessage = { role: "user", content: text.trim() };
@@ -65,53 +65,55 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
     setIsLoading(true);
     audio.setEmotionState("thinking");
 
-    try {
-      const apiMessages = newMessages.map((m) => ({
-        role: m.role,
-        content:
-          m.role === "assistant" && m.rockyResponse
-            ? JSON.stringify(m.rockyResponse)
-            : m.content,
-      }));
+    void (async () => {
+      try {
+        const apiMessages = newMessages.map((m) => ({
+          role: m.role,
+          content:
+            m.role === "assistant" && m.rockyResponse
+              ? JSON.stringify(m.rockyResponse)
+              : m.content,
+        }));
 
-      const response = await callRockyAPI(apiMessages, apiKey);
+        const response = await callRockyAPI(apiMessages, apiKey);
 
-      // Resolve chords against lexicon
-      response.chords = resolveChords(
-        response.chords,
-        learnedWordsRef.current
-      );
+        // Resolve chords against lexicon
+        response.chords = resolveChords(
+          response.chords,
+          learnedWordsRef.current
+        );
 
-      // Detect emotion from response
-      const emotion = detectEmotion(response);
-      audio.setEmotionState(emotion.state);
-      audio.setEmotionIntensity(emotion.intensity);
+        // Detect emotion from response
+        const emotion = detectEmotion(response);
+        audio.setEmotionState(emotion.state);
+        audio.setEmotionIntensity(emotion.intensity);
 
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: response.rocky_english,
-        rockyResponse: response,
-      };
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: response.rocky_english,
+          rockyResponse: response,
+        };
 
-      const msgIdx = newMessages.length;
-      setMessages([...newMessages, assistantMessage]);
-      setMessageEmotions((prev) => new Map(prev).set(msgIdx, emotion.state));
-    } catch (error) {
-      console.error("Rocky API error:", error);
-      const fallback =
-        ERROR_RESPONSES[Math.floor(Math.random() * ERROR_RESPONSES.length)];
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: fallback.rocky_english,
-        rockyResponse: fallback,
-      };
-      audio.setEmotionState("neutral");
-      const msgIdx = newMessages.length;
-      setMessages([...newMessages, assistantMessage]);
-      setMessageEmotions((prev) => new Map(prev).set(msgIdx, "neutral"));
-    } finally {
-      setIsLoading(false);
-    }
+        const msgIdx = newMessages.length;
+        setMessages([...newMessages, assistantMessage]);
+        setMessageEmotions((prev) => new Map(prev).set(msgIdx, emotion.state));
+      } catch (error) {
+        console.error("Rocky API error:", error);
+        const fallback =
+          ERROR_RESPONSES[Math.floor(Math.random() * ERROR_RESPONSES.length)];
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: fallback.rocky_english,
+          rockyResponse: fallback,
+        };
+        audio.setEmotionState("neutral");
+        const msgIdx = newMessages.length;
+        setMessages([...newMessages, assistantMessage]);
+        setMessageEmotions((prev) => new Map(prev).set(msgIdx, "neutral"));
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   };
 
   const playResponse = (msgIdx: number, response: RockyResponse) => {
@@ -188,6 +190,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
           ref={scrollRef}
           role="log"
           aria-live="polite"
+          aria-relevant="additions text"
           aria-label="Conversation with Rocky"
           className="h-full space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6"
         >
@@ -343,6 +346,8 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
               </div>
 
               <div
+                role="status"
+                aria-live="polite"
                 className="px-4 py-3"
                 style={{
                   background: "rgba(17, 24, 39, 0.70)",
@@ -381,7 +386,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
                     </span>
                   </span>
                   <span className="text-sm text-rocky-muted">
-                    Rocky is thinking\u2026
+                    Rocky is thinking…
                   </span>
                 </div>
               </div>
