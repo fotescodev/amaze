@@ -191,7 +191,6 @@ function RockyQuoteCarousel() {
 
 export default function Home() {
   const [apiKey, setApiKey] = useState("");
-  const [isKeySet, setIsKeySet] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const tabPanelId = useId();
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -227,126 +226,6 @@ export default function Home() {
     }
   }, [focusTab]);
 
-  if (!isKeySet) {
-    return (
-      <main className="relative flex min-h-screen items-center justify-center p-4" id="main-content">
-
-        {/* Scan-line overlay */}
-        <div
-          className="pointer-events-none fixed inset-0 z-50 opacity-[0.06] motion-safe:animate-scanline"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(148,163,184,0.08) 2px, rgba(148,163,184,0.08) 4px)",
-          }}
-        />
-
-        <div className="w-full max-w-md space-y-8 text-center">
-          {/* Rocky hero image */}
-          <div className="flex justify-center">
-            <Image
-              src="/rocky-hero.svg"
-              alt="Rocky, an Eridian alien with five legs and a pentagonal body"
-              width={160}
-              height={160}
-              priority
-              className="drop-shadow-[0_0_30px_rgba(245,158,11,0.20)]"
-            />
-          </div>
-
-          {/* Eridian glyph with gentle pulse */}
-          <div
-            className="font-mono text-3xl sm:text-[3rem] leading-none text-rocky-warm motion-safe:animate-gentle-pulse"
-            aria-hidden="true"
-            style={{
-              textShadow: "0 0 30px rgba(245, 158, 11, 0.30)",
-            }}
-          >
-            ◈~⊕~◈
-          </div>
-
-          {/* Title */}
-          <div>
-            <h1
-              className="text-3xl sm:text-[2.5rem] font-bold tracking-tight text-rocky-text"
-              style={{ letterSpacing: "-0.02em" }}
-            >
-              Talk to Rocky
-            </h1>
-            <p className="mt-3 text-sm leading-relaxed text-rocky-muted">
-              An Eridian communication interface powered by AI.
-              <br />
-              Speak to an alien who hears in chords and sees in sound.
-            </p>
-          </div>
-
-          {/* Rocky quotes carousel */}
-          <RockyQuoteCarousel />
-
-          {/* Glass-morphism card */}
-          <div className="glass-panel p-8 text-left space-y-5">
-            <div>
-              <label
-                htmlFor="api-key"
-                className="block text-xs font-semibold uppercase tracking-[0.06em] text-rocky-muted mb-2"
-              >
-                Anthropic API Key
-              </label>
-              <input
-                id="api-key"
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-…"
-                autoComplete="off"
-                className="w-full rounded-[10px] border border-rocky-border bg-[#060a12] px-4 py-3 text-sm text-rocky-text placeholder-rocky-dim font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rocky-warm/50 focus-visible:ring-offset-2 focus-visible:ring-offset-rocky-bg transition-[border-color,box-shadow] duration-200 ease-in-out"
-                style={{
-                  boxShadow: "none",
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor =
-                    "rgba(245, 158, 11, 0.25)";
-                  e.currentTarget.style.boxShadow =
-                    "0 0 0 3px rgba(245, 158, 11, 0.10)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && apiKey.trim()) {
-                    setIsKeySet(true);
-                  }
-                }}
-              />
-              <p className="mt-2 text-xs text-rocky-muted">
-                Your key is used client-side only. Never stored or transmitted
-                to any server.
-              </p>
-            </div>
-
-            <button
-              onClick={() => apiKey.trim() && setIsKeySet(true)}
-              disabled={!apiKey.trim()}
-              className="w-full rounded-[10px] bg-rocky-warm py-3 text-sm font-semibold text-[#0a0e1a] transition-[background-color,box-shadow,transform] duration-200 ease-in-out hover:bg-[#fbbf24] hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] active:scale-[0.98] active:bg-[#d97706] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rocky-warm/50 focus-visible:ring-offset-2 focus-visible:ring-offset-rocky-bg"
-            >
-              Enter the Hail Mary
-            </button>
-          </div>
-
-          {/* Footer disclaimer */}
-          <footer className="text-xs text-rocky-dim">
-            A fan project inspired by{" "}
-            <span className="text-rocky-muted">Project Hail Mary</span> by Andy
-            Weir.
-            <br />
-            Eridian chord assignments are fan-extended interpretations.
-          </footer>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="relative flex h-screen flex-col" id="main-content">
       {/* Scan-line overlay */}
@@ -360,6 +239,27 @@ export default function Home() {
       />
 
       {/* Tab bar */}
+      <div className="border-b border-[rgba(55,65,81,0.30)] px-4 py-4">
+        <div className="mx-auto w-full max-w-4xl">
+          <div className="mb-3 flex items-center gap-3">
+            <Image
+              src="/rocky-hero.svg"
+              alt="Rocky, an Eridian alien with five legs and a pentagonal body"
+              width={48}
+              height={48}
+              priority
+              className="drop-shadow-[0_0_20px_rgba(245,158,11,0.18)]"
+            />
+            <div>
+              <h1 className="text-base font-semibold text-rocky-text">Talk to Rocky</h1>
+              <p className="text-xs text-rocky-muted">
+                Explore the lexicon or hear Rocky before you chat.
+              </p>
+            </div>
+          </div>
+          <RockyQuoteCarousel />
+        </div>
+      </div>
       <div
         role="tablist"
         aria-label="Main navigation"
@@ -409,7 +309,7 @@ export default function Home() {
         >
           {activeTab === "chat" && (
             <AudioAnalysisProvider>
-              <ChatInterface apiKey={apiKey} />
+              <ChatInterface apiKey={apiKey} onApiKeyChange={setApiKey} />
             </AudioAnalysisProvider>
           )}
         </div>

@@ -105,7 +105,9 @@ describe("ChatInterface accessibility", () => {
         })
     );
 
-    const { container } = render(<ChatInterface apiKey="test-key" />);
+    const { container } = render(
+      <ChatInterface apiKey="test-key" onApiKeyChange={vi.fn()} />
+    );
 
     const log = screen.getByRole("log", { name: "Conversation with Rocky" });
     expect(log).toHaveAttribute("aria-live", "polite");
@@ -148,7 +150,7 @@ describe("ChatInterface accessibility", () => {
   });
 
   it("exposes the octave shift toggle with aria-pressed", () => {
-    render(<ChatInterface apiKey="test-key" />);
+    render(<ChatInterface apiKey="test-key" onApiKeyChange={vi.fn()} />);
 
     const toggle = screen.getByRole("button", { name: /mode enabled/i });
 
@@ -157,5 +159,49 @@ describe("ChatInterface accessibility", () => {
     fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("surfaces an inline API key prompt when sending without a key", () => {
+    render(<ChatInterface apiKey="" onApiKeyChange={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText("Message to Rocky"), {
+      target: { value: "Hello Rocky" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(screen.getByLabelText("Anthropic API Key")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unlock Chat" })).toBeInTheDocument();
+    expect(callRockyAPIMock).not.toHaveBeenCalled();
+  });
+
+  it("submits the queued message after an inline API key entry", async () => {
+    const onApiKeyChange = vi.fn();
+    callRockyAPIMock.mockResolvedValue({
+      rocky_english: "Hello human",
+      chords: [],
+    });
+
+    const { rerender } = render(
+      <ChatInterface apiKey="" onApiKeyChange={onApiKeyChange} />
+    );
+
+    fireEvent.change(screen.getByLabelText("Message to Rocky"), {
+      target: { value: "Hello Rocky" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    fireEvent.change(screen.getByLabelText("Anthropic API Key"), {
+      target: { value: "test-key" },
+    });
+    expect(onApiKeyChange).toHaveBeenCalledWith("test-key");
+
+    rerender(<ChatInterface apiKey="test-key" onApiKeyChange={onApiKeyChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Unlock Chat" }));
+
+    expect(callRockyAPIMock).toHaveBeenCalledWith(
+      [{ role: "user", content: "Hello Rocky" }],
+      "test-key"
+    );
+    expect(await screen.findByText("Hello human")).toBeInTheDocument();
   });
 });

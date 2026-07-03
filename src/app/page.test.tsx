@@ -54,11 +54,6 @@ describe("Home accessibility", () => {
   it("exposes main tabs with roving focus and arrow key navigation", () => {
     render(<Home />);
 
-    fireEvent.change(screen.getByLabelText("Anthropic API Key"), {
-      target: { value: "test-key" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Enter the Hail Mary" }));
-
     const chatTab = screen.getByRole("tab", { name: "Chat with Rocky" });
     const lexiconTab = screen.getByRole("tab", { name: "Eridian Lexicon" });
 
@@ -74,5 +69,19 @@ describe("Home accessibility", () => {
     expect(lexiconTab).toHaveFocus();
     expect(lexiconTab).toHaveAttribute("aria-selected", "true");
     expect(chatTab).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("renders the experience without a full-screen API key gate", () => {
+    render(<Home />);
+
+    expect(screen.getByRole("tab", { name: "Chat with Rocky" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Eridian Lexicon" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Play Rocky's quote:/i })
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Anthropic API Key")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Enter the Hail Mary" })
+    ).not.toBeInTheDocument();
   });
 });
