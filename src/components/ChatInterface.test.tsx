@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import ChatInterface from "./ChatInterface";
@@ -177,6 +177,44 @@ describe("ChatInterface accessibility", () => {
     fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("uses contained overscroll on the chat log and disables smooth scrolling under reduced motion", async () => {
+    const scrollToMock = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+      writable: true,
+      value: scrollToMock,
+    });
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    callRockyAPIMock.mockResolvedValue({
+      rocky_english: "Hello human",
+      chords: [],
+    });
+
+    render(<ChatInterface apiKey="test-key" onApiKeyChange={vi.fn()} />);
+
+    const log = screen.getByRole("log", { name: "Conversation with Rocky" });
+    expect(log).toHaveClass("overscroll-contain");
+
+    fireEvent.change(screen.getByLabelText("Message to Rocky"), {
+      target: { value: "Hello Rocky" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() =>
+      expect(scrollToMock).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: "auto" })
+      )
+    );
   });
 
   it("surfaces an inline API key prompt when sending without a key", () => {
