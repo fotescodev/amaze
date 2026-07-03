@@ -21,12 +21,15 @@ import XenonitePanel from "./XenonitePanel";
 
 interface ChatInterfaceProps {
   apiKey: string;
+  onApiKeyChange: (apiKey: string) => void;
 }
 
-export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
+export default function ChatInterface({ apiKey, onApiKeyChange }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState("");
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [playingMessageIdx, setPlayingMessageIdx] = useState<number | null>(
     null
   );
@@ -55,8 +58,17 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
     prevMessageCountRef.current = messages.length;
   }, [messages]);
 
+  const queueMessageForApiKey = (text: string) => {
+    setPendingMessage(text.trim());
+    setShowApiKeyPrompt(true);
+  };
+
   const sendMessage = (text: string) => {
     if (!text.trim() || isLoading) return;
+    if (!apiKey.trim()) {
+      queueMessageForApiKey(text);
+      return;
+    }
 
     const userMessage: ChatMessage = { role: "user", content: text.trim() };
     const newMessages = [...messages, userMessage];
@@ -114,6 +126,15 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         setIsLoading(false);
       }
     })();
+  };
+
+  const submitApiKeyAndSend = () => {
+    if (!apiKey.trim() || !pendingMessage || isLoading) return;
+
+    const queuedMessage = pendingMessage;
+    setPendingMessage("");
+    setShowApiKeyPrompt(false);
+    sendMessage(queuedMessage);
   };
 
   const playResponse = (msgIdx: number, response: RockyResponse) => {
@@ -401,6 +422,43 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
         className="border-t border-rocky-border px-4 py-3"
         style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
       >
+        {showApiKeyPrompt && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitApiKeyAndSend();
+            }}
+            className="mb-3 rounded-[10px] border border-rocky-border bg-rocky-surface p-3"
+          >
+            <label
+              htmlFor="inline-api-key"
+              className="block text-xs font-semibold uppercase tracking-[0.06em] text-rocky-muted"
+            >
+              Anthropic API Key
+            </label>
+            <p className="mt-1 text-xs text-rocky-muted">
+              Chat needs your key. It stays client-side only and is never stored server-side.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <input
+                id="inline-api-key"
+                type="password"
+                value={apiKey}
+                onChange={(e) => onApiKeyChange(e.target.value)}
+                placeholder="sk-ant-…"
+                autoComplete="off"
+                className="flex-1 rounded-[10px] border border-rocky-border bg-rocky-inset px-4 py-3 text-sm text-rocky-text placeholder-rocky-dim font-mono transition-colors duration-200 focus-visible:border-[rgba(245,158,11,0.25)] focus-visible:shadow-[0_0_0_3px_rgba(245,158,11,0.10)] focus-visible:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!apiKey.trim() || isLoading}
+                className="rounded-[10px] bg-rocky-warm px-4 py-3 text-sm font-semibold text-rocky-bg transition-colors duration-200 hover:bg-rocky-warm-hover hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Unlock Chat
+              </button>
+            </div>
+          </form>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
