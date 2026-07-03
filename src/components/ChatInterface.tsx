@@ -18,6 +18,13 @@ import ReactiveRockyHero from "./ReactiveRockyHero";
 import ReactiveRockyAvatar from "./ReactiveRockyAvatar";
 import AtmosphereLayer from "./AtmosphereLayer";
 import XenonitePanel from "./XenonitePanel";
+import {
+  createRevealState,
+  initializeReveal,
+  startReveal,
+  tickReveal,
+  type RevealState,
+} from "@/hooks/useReplyReveal";
 
 interface ChatInterfaceProps {
   apiKey: string;
@@ -38,6 +45,9 @@ export default function ChatInterface({ apiKey, onApiKeyChange }: ChatInterfaceP
   );
   const [octaveShift, setOctaveShift] = useState(false);
   const [messageEmotions, setMessageEmotions] = useState<Map<number, EmotionState>>(new Map());
+  const [messageReveals, setMessageReveals] = useState<Map<number, RevealState>>(
+    new Map()
+  );
 
   const audio = useAudioAnalysis();
   const learnedWordsRef = useRef<Map<string, ChordData>>(new Map());
@@ -109,6 +119,9 @@ export default function ChatInterface({ apiKey, onApiKeyChange }: ChatInterfaceP
         const msgIdx = newMessages.length;
         setMessages([...newMessages, assistantMessage]);
         setMessageEmotions((prev) => new Map(prev).set(msgIdx, emotion.state));
+        setMessageReveals((prev) =>
+          new Map(prev).set(msgIdx, initializeReveal(response.chords.length))
+        );
       } catch (error) {
         console.error("Rocky API error:", error);
         const fallback =
@@ -122,6 +135,9 @@ export default function ChatInterface({ apiKey, onApiKeyChange }: ChatInterfaceP
         const msgIdx = newMessages.length;
         setMessages([...newMessages, assistantMessage]);
         setMessageEmotions((prev) => new Map(prev).set(msgIdx, "neutral"));
+        setMessageReveals((prev) =>
+          new Map(prev).set(msgIdx, initializeReveal(fallback.chords.length))
+        );
       } finally {
         setIsLoading(false);
       }
@@ -151,12 +167,33 @@ export default function ChatInterface({ apiKey, onApiKeyChange }: ChatInterfaceP
     if (words.length === 0) return;
 
     setPlayingMessageIdx(msgIdx);
+    setMessageReveals((prev) => {
+      const next = new Map(prev);
+      const current = next.get(msgIdx) ?? createRevealState();
+      next.set(msgIdx, startReveal(current, response.chords.length));
+      return next;
+    });
 
     audio
       .playChords(words, octaveShift, (wordIdx) => {
         setHighlightedWordIdx(wordIdx);
+        setMessageReveals((prev) => {
+          const next = new Map(prev);
+          const current = next.get(msgIdx) ?? createRevealState();
+          next.set(msgIdx, tickReveal(current, wordIdx, response.chords.length));
+          return next;
+        });
       })
       .then(() => {
+        setMessageReveals((prev) => {
+          const next = new Map(prev);
+          const current = next.get(msgIdx) ?? createRevealState();
+          next.set(
+            msgIdx,
+            tickReveal(current, response.chords.length - 1, response.chords.length)
+          );
+          return next;
+        });
         setPlayingMessageIdx(null);
         setHighlightedWordIdx(null);
       });
