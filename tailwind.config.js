@@ -11,7 +11,7 @@ module.exports = {
         "fan-extended": "#94a3b8",
         "ai-extended": "#a78bfa",
         rocky: {
-          bg: "#0a0e1a",
+          bg: "#0f172a",
           surface: "#111827",
           elevated: "#1a2235",
           inset: "#060a12",
@@ -22,7 +22,7 @@ module.exports = {
           "warm-glow": "rgba(245, 158, 11, 0.15)",
           text: "#e2e8f0",
           muted: "#94a3b8",
-          dim: "#64748b",
+          dim: "#a5b4c7",
         },
       },
       fontFamily: {

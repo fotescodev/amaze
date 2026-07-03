@@ -12,10 +12,13 @@ export const metadata: Metadata = {
   title: "Talk to Rocky — Eridian Communication Interface",
   description:
     "A fan-built, AI-enabled Eridian communication interface inspired by Project Hail Mary by Andy Weir.",
+  other: {
+    "theme-color": "#0f172a",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0e1a",
+  themeColor: "#0f172a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
