@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import Home from "./page";
-import RootLayout from "./layout";
+import RootLayout, { metadata, viewport } from "./layout";
 
 vi.mock("next/font/google", () => ({
   JetBrains_Mono: () => ({ variable: "font-mock" }),
@@ -43,6 +45,26 @@ vi.mock("@/data/lexicon", () => ({
 }));
 
 describe("Home accessibility", () => {
+  it("exports dark theme metadata for browser chrome and native controls", () => {
+    expect(metadata.other).toMatchObject({ "theme-color": "#0f172a" });
+    expect(viewport.themeColor).toBe("#0f172a");
+
+    const { container } = render(<RootLayout><main id="main-content" /></RootLayout>);
+    const html = container.querySelector("html");
+
+    expect(html).not.toBeNull();
+    expect(html).toHaveStyle({ colorScheme: "dark" });
+  });
+
+  it("defines dark-theme and contrast tokens in the global stylesheet", () => {
+    const globalsCss = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
+
+    expect(globalsCss).toContain("color-scheme: dark;");
+    expect(globalsCss).toContain("--text-secondary: #94a3b8;");
+    expect(globalsCss).toContain("--text-tertiary: #a5b4c7;");
+    expect(globalsCss).toContain("outline: 2px solid var(--amber-300) !important;");
+  });
+
   it("renders a skip link that targets the main landmark", () => {
     render(<RootLayout><main id="main-content" /></RootLayout>);
 

@@ -5,7 +5,7 @@
 /* ─── CSS Custom Properties (DESIGN.md Appendix) ────────────────────────── */
 :root {
   /* Backgrounds */
-  --bg-primary: #0a0e1a;
+  --bg-primary: #0f172a;
   --bg-secondary: #111827;
   --bg-elevated: #1a2235;
   --bg-inset: #060a12;
@@ -37,18 +37,27 @@
   /* Text */
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  --text-tertiary: #a5b4c7;
   --text-warm: #f59e0b;
-  --text-inverse: #0a0e1a;
+  --text-inverse: #0f172a;
 }
 
 /* ─── Base Layer ─────────────────────────────────────────────────────────── */
 @layer base {
+  html {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-rocky-bg text-rocky-text;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) 0 env(safe-area-inset-left, 0);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--amber-300) !important;
+    outline-offset: 2px;
   }
 }
 
