@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { vi, describe, expect, it } from "vitest";
 import ChordCard from "./ChordCard";
@@ -36,5 +36,20 @@ describe("ChordCard accessibility", () => {
     const results = await axe(container);
 
     expect(results.violations).toHaveLength(0);
+  });
+
+  it("exposes the expanded card as a focusable keyboard-activatable control", () => {
+    render(<ChordCard entry={entry} />);
+
+    const card = screen.getByRole("button", {
+      name: 'amaze — click to expand details',
+    });
+
+    expect(card).toHaveAttribute("tabindex", "0");
+    expect(card).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.keyDown(card, { key: "Enter" });
+
+    expect(card).toHaveAttribute("aria-expanded", "true");
   });
 });

@@ -146,4 +146,16 @@ describe("ChatInterface accessibility", () => {
 
     expect(results.violations).toHaveLength(0);
   });
+
+  it("exposes the octave shift toggle with aria-pressed", () => {
+    render(<ChatInterface apiKey="test-key" />);
+
+    const toggle = screen.getByRole("button", { name: /mode enabled/i });
+
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
 });

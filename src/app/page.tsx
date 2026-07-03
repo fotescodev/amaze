@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useId, useCallback, useRef } from "react";
+import { useState, useId, useCallback, useRef, type KeyboardEvent } from "react";
 import Image from "next/image";
 import ChatInterface from "@/components/ChatInterface";
 import LexiconExplorer from "@/components/LexiconExplorer";
@@ -194,6 +194,38 @@ export default function Home() {
   const [isKeySet, setIsKeySet] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const tabPanelId = useId();
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const focusTab = useCallback((nextIndex: number) => {
+    const tab = TABS[nextIndex];
+    if (!tab) return;
+
+    setActiveTab(tab.id);
+    tabRefs.current[nextIndex]?.focus();
+  }, []);
+
+  const handleTabKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault();
+        focusTab((index + 1) % TABS.length);
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault();
+        focusTab((index - 1 + TABS.length) % TABS.length);
+        break;
+      case "Home":
+        event.preventDefault();
+        focusTab(0);
+        break;
+      case "End":
+        event.preventDefault();
+        focusTab(TABS.length - 1);
+        break;
+    }
+  }, [focusTab]);
 
   if (!isKeySet) {
     return (
@@ -334,8 +366,9 @@ export default function Home() {
         className="flex border-b border-[rgba(55,65,81,0.30)]"
         style={{ background: "var(--bg-primary, #0a0e1a)" }}
       >
-        {TABS.map((tab) => {
+        {TABS.map((tab, index) => {
           const isActive = activeTab === tab.id;
+          const tabIndex = isActive ? 0 : -1;
           return (
             <button
               key={tab.id}
@@ -343,7 +376,12 @@ export default function Home() {
               id={`tab-${tab.id}`}
               aria-selected={isActive}
               aria-controls={`${tabPanelId}-${tab.id}`}
+              tabIndex={tabIndex}
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
               onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
               className={`flex-1 py-3 text-sm font-medium transition-[color,border-color] duration-200 ease-in-out border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rocky-warm/50 ${
                 isActive
                   ? "border-rocky-warm text-rocky-warm font-semibold"
