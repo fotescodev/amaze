@@ -42,7 +42,9 @@ vi.mock("./ChordCard", () => ({
 }));
 
 vi.mock("./PentagonalChordViz", () => ({
-  default: () => <div data-testid="viz" />,
+  default: () => (
+    <canvas role="img" aria-label="Eridian chord visualizer — idle" />
+  ),
 }));
 
 vi.mock("./ReactiveRockyHero", () => ({
@@ -109,6 +111,16 @@ describe("ChatInterface accessibility", () => {
       <ChatInterface apiKey="test-key" onApiKeyChange={vi.fn()} />
     );
 
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Talk to Rocky" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Eridian chord visualizer — idle" })
+    ).toBeInTheDocument();
+
+    const decorativeGlyph = screen.getByText("◈~⊕~◈");
+    expect(decorativeGlyph).toHaveAttribute("aria-hidden", "true");
+
     const log = screen.getByRole("log", { name: "Conversation with Rocky" });
     expect(log).toHaveAttribute("aria-live", "polite");
     expect(log).toHaveAttribute("aria-relevant", "additions text");
@@ -121,6 +133,12 @@ describe("ChatInterface accessibility", () => {
     const thinkingStatus = await screen.findByRole("status");
     expect(thinkingStatus).toHaveAttribute("aria-live", "polite");
     expect(thinkingStatus).toHaveTextContent("Rocky is thinking…");
+    expect(
+      thinkingStatus.querySelector('span[aria-hidden="true"]')
+    ).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
 
     resolveResponse?.({
       rocky_english: "Hello human",

@@ -38,6 +38,17 @@ describe("ChordCard accessibility", () => {
     expect(results.violations).toHaveLength(0);
   });
 
+  it("exposes the fidelity tag with an accessible name and description", () => {
+    render(<ChordCard entry={entry} />);
+
+    const fidelityTag = screen.getByText("CANON");
+
+    expect(fidelityTag).toHaveAccessibleName("CANON");
+    expect(fidelityTag).toHaveAccessibleDescription(
+      "Directly from the novel text."
+    );
+  });
+
   it("exposes the expanded card as a focusable keyboard-activatable control", () => {
     render(<ChordCard entry={entry} />);
 
