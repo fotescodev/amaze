@@ -52,7 +52,7 @@ export default function ChatInterface({ apiKey, onApiKeyChange }: ChatInterfaceP
       ).matches;
       scrollRef.current?.scrollTo({
         top: scrollRef.current.scrollHeight,
-        behavior: prefersReduced ? "instant" : "smooth",
+        behavior: prefersReduced ? "auto" : "smooth",
       });
     }
     prevMessageCountRef.current = messages.length;

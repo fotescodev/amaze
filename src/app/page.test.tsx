@@ -63,6 +63,10 @@ describe("Home accessibility", () => {
     expect(globalsCss).toContain("--text-secondary: #94a3b8;");
     expect(globalsCss).toContain("--text-tertiary: #a5b4c7;");
     expect(globalsCss).toContain("outline: 2px solid var(--amber-300) !important;");
+    expect(globalsCss).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(globalsCss).toContain("scroll-behavior: auto !important;");
+    expect(globalsCss).toContain("touch-action: manipulation;");
+    expect(globalsCss).toContain("overscroll-behavior: contain;");
   });
 
   it("renders a skip link that targets the main landmark", () => {

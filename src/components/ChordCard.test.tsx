@@ -38,6 +38,17 @@ describe("ChordCard accessibility", () => {
     expect(results.violations).toHaveLength(0);
   });
 
+  it("keeps compact chord cards at a 44px minimum touch target", () => {
+    render(<ChordCard entry={entry} compact />);
+
+    const compactCard = screen.getByRole("button", {
+      name: 'Play Eridian chord for "amaze"',
+    });
+
+    expect(compactCard).toHaveClass("min-h-[44px]");
+    expect(compactCard).toHaveClass("min-w-[44px]");
+  });
+
   it("exposes the fidelity tag with an accessible name and description", () => {
     render(<ChordCard entry={entry} />);
 
