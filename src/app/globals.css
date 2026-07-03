@@ -117,6 +117,37 @@
   }
 }
 
+@keyframes rocky-reply-glyph-fade {
+  0%, 45% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-0.2rem);
+  }
+}
+
+@keyframes rocky-reply-word-rise {
+  0%, 45% {
+    opacity: 0;
+    transform: translateY(0.2rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rocky-reply-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* ─── Xenonite Panel Shimmer ──────────────────────────────────────────── */
 @property --xenonite-angle {
   syntax: "<angle>";
@@ -180,6 +211,72 @@
 
   .message-enter {
     animation: message-enter 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .rocky-reply-token {
+    @apply inline-flex items-center rounded-md px-2 py-1 font-mono;
+    background: rgba(17, 24, 39, 0.55);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .rocky-reply-token-active {
+    position: relative;
+    min-width: max-content;
+    overflow: hidden;
+  }
+
+  .rocky-reply-token-active::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.10) 40%,
+      rgba(255, 255, 255, 0.28) 50%,
+      transparent 60%
+    );
+    background-size: 220% 100%;
+    animation: rocky-reply-shimmer 900ms ease-out both;
+    pointer-events: none;
+  }
+
+  .rocky-reply-token-active::before {
+    content: attr(data-word);
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    animation: rocky-reply-word-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    white-space: pre;
+  }
+
+  .rocky-reply-glyph {
+    display: inline-block;
+    white-space: pre;
+  }
+
+  .rocky-reply-glyph {
+    animation: rocky-reply-glyph-fade 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .rocky-reply-tint-consonant {
+    color: var(--amber-400);
+    border-color: rgba(245, 158, 11, 0.25);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.12);
+  }
+
+  .rocky-reply-tint-dissonant {
+    color: var(--blue-400);
+    border-color: rgba(96, 165, 250, 0.25);
+    box-shadow: 0 0 12px rgba(96, 165, 250, 0.10);
+  }
+
+  .rocky-reply-tint-open {
+    color: var(--text-secondary);
+    border-color: rgba(148, 163, 184, 0.20);
   }
 
   .xenonite-panel {
